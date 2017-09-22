@@ -1,0 +1,1677 @@
+\documentclass[a4paper,11pt]{article}
+%\usepackage{tocvsec2}
+%\usepackage{titletoc}
+%\usepackage{titlesec}
+\usepackage{ifthen}
+\usepackage{verbatim}
+\usepackage{longtable, array, multicol,multirow}
+\usepackage{enumitem, mdwlist}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{underscore}%正文使用_
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\usepackage[titletoc]{appendix}
+\usepackage{makeidx}%索引
+\usepackage[iso]{isodateo}%控制\today的格式
+\usepackage{tikz}
+\usetikzlibrary{arrows,decorations.pathmorphing,positioning,backgrounds,chains,fit,calc,%
+petri,through,shapes}
+\usepackage{graphics}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{language=C,
+    breaklines=true,
+    extendedchars=false,
+    breakautoindent=true,
+    breakindent=10pt,
+    xleftmargin=30pt, 
+    numbers=left, 
+    basicstyle=\scriptsize,
+    %numberstyle=\tiny,
+    %keywordstyle=\tiny\color{blue!70}, 
+    %commentstyle=\tiny\color{red!50!green!50!blue!50},
+    showspaces=false,
+    showstringspaces=false,
+    escapeinside={(*@}{@*)} 
+   %  frame=shadowbox,
+  %  rulesepcolor=\color{red!20!green!20!blue!20}
+  }
+\lstdefinelanguage{KC}{language={C},morekeywords={uint32_t, size_t}}
+\usepackage[CJKbookmarks=true, bookmarksnumbered=true,
+colorlinks=true,% frenchlinks=true, raiselinks=true, xetex,, linktocpage=true 
+citecolor=magenta, linkcolor=blue]{hyperref}
+%\usepackage[CJKbookmarks=true, bookmarksnumbered=true,
+%colorlinks=false, citecolor=magenta]{hyperref}
+\usepackage[superscript]{cite}
+\usepackage{xeCJK}
+\setCJKmainfont{AR PL UKai CN}
+\setCJKmonofont{文泉驿等宽正黑}
+\punctstyle{banjiao}
+%\setCJKfamilyfont{AR PL UKai CN}{kai}
+\setmainfont{DejaVu Sans}
+\setmonofont{AR PL UKai CN}
+\title{Android 资源管理器分析}
+\author{shecenon@gmail.com}
+\date{\today}
+
+\makeindex 
+
+\begin{document}
+\maketitle
+\renewcommand{\refname}{参考文献}
+\renewcommand\contentsname{目录}
+\renewcommand\listfigurename{插图目录}
+\renewcommand\listtablename{表格目录}
+\renewcommand\indexname{索引}
+\renewcommand\appendixname{附录}
+\renewcommand\figurename{图}
+\renewcommand\tablename{表}
+\renewcommand{\lstlistlistingname}{代码列表集}
+\renewcommand{\lstlistingname}{代码}
+
+\def\equationautorefname{公式}%
+\def\figureautorefname{图}%
+\def\subfigureautorefname{子图}%
+\def\sectionautorefname{节}%
+\def\subsectionautorefname{子节}%
+\def\subsubsectionautorefname{小节}%
+\def\Itemautorefname{项}%
+\def\tableautorefname{表格}%
+\def\footnoteautorefname{脚注} 
+\def\appendixautorefname{附录}
+
+%\renewcommand\thefootnote{\thempfootnote}
+
+\setdescription{labelsep=\textwidth}
+%\setlength{\multicolsep}{3pt} 
+%\multicolsep=\skip59
+\setlength{\columnsep}{.8cm}
+%\titlecontents{section}[1.5em]{}{\thecontentslabel}{}{\dotfill \contentspage}
+%\titlecontents{section}[1.5em]{\color{blue}\normalsize\addvspace{1.0ex}}{\contentslabel{2em}\hspace∗{−0.0em}}{\hspace∗{−3.3em}}{\color{black}\titlerule ∗[0.8pc]{}\contentspage}
+\setlength{\parskip}{1ex}
+\headheight13.8pt
+\tableofcontents
+\makeatletter
+\newcommand{\figcaption}{\def\@captype{figure}\caption}
+\newcommand{\tabcaption}{\def\@captype{table}\caption}
+\makeatother
+
+\def\call#1{\\* {\indent #1 \\*\noindent}} 
+%\newcommand{\call}[1]{\\* {\kern10pt #1 \\*\noindent}}
+\newcommand{\various}[1]{{\color{cyan}\textit{#1}}}
+%\newcommand{\binder}{{\color{red}binder }}
+\def\binder{{\color{red}binder }}
+\def\cref#1{$^{\scriptsize\ref{#1}}$}
+
+\setlength{\leftmargin}{1.2em}     %左边界
+\setlength{\parsep}{0ex}         %段落间距
+\setlength{\topsep}{1ex}         %列表到上下文的垂直距离
+\setlength{\itemsep}{0.5ex}        %条目间距
+\setlength{\labelsep}{0.3em}     %标号和列表项之间的距离,默认0.5em
+\setlength{\itemindent}{1.1em}    %标签缩进量
+\setlength{\listparindent}{0em} %段落缩进量
+
+Android 在应用程序的开发中大量使用了资源，他也把资源的使用发挥了极致。
+资源管理的核心代码在frameworks/base/libs/utils 中，主要有 
+Asset.cpp,AssetManager.cpp,AssetDir.cpp,ResourceTypes.cpp
+以及基础StringPool.cpp, String16.cpp, String8.cpp。
+这是资源的编解码库。
+aapt 是生成资源的工具，也使用了这个库。而Android应用程序也是使用这个库来解析资
+源。 这从utils目录下的Android.mk 就可以看出来，把编译了本地的库和目标机器的库
+。
+
+\section{资源管理器一瞥}
+AssetManager 资源管理器
+aapt 是比较复杂的，不适合入门。bootanimation
+\footnote{frameworks/base/cmds/bootanimation} 有个简单的，可作示例：
+
+\begin{lstlisting}
+status_t BootAnimation::initTexture(Texture* texture,
+                AssetManager& assets, const char* name) {
+    Asset* asset = assets.open(name, Asset::ACCESS_BUFFER);
+    if (!asset)
+        return NO_INIT;
+    SkBitmap bitmap;
+    SkImageDecoder::DecodeMemory(asset->getBuffer(false),
+            asset->getLength(), &bitmap, SkBitmap::kNo_Config,
+            SkImageDecoder::kDecodePixels_Mode);
+    asset->close();
+    delete asset;
+    . . .
+}
+\end{lstlisting}
+
+这个name 就是路径，如 "images/android-logo-shine.png"，因为这个不是Android
+应用程序，这个资源就是"framework/framework-res.apk"，即 AssetManager.cpp 的
+kSystemAssets 值。
+
+从这段代码看，就是使用 AssetManager 打开一个文件，得到的是 Asset，从Asset调用
+getBuffer得到数据， 调用 getLength 得到数据长度，调用close 关闭资源，然后要删
+除 delete 这个对象（因为动态分配的）。
+
+\subsection{创建资源管理器}
+BootAnimation 有个疑问就是 AssetManager 对象的不知如何创建的 ?
+不过，android_util_AssetManager.cpp 的 android_content_AssetManager_init 给的
+很详细：
+\begin{lstlisting}
+static void android_content_AssetManager_init(JNIEnv* env, jobject clazz)
+{
+    AssetManager* am = new AssetManager();
+    if (am == NULL) {
+        jniThrowException(env, "java/lang/OutOfMemoryError", "");
+        return;
+    }
+
+    am->addDefaultAssets();
+
+    LOGV("Created AssetManager %p for Java object %p\n", am, clazz);
+    env->SetIntField(clazz, gAssetManagerOffsets.mObject, (jint)am);
+}
+\end{lstlisting}
+AssetManager.java 的构造器都要调用 init 方法, ActivityThread.java, 
+PackageParser.java 会创建 AssetManager 对象。
+
+aapt 中 AssetManager 对象在什么地方创建? 就是 AssetManager 类型数据成员 
+mIncludedAssets。%哦，对C++语言不熟了，声明了对象就创建了对象！
+
+\subsection{加入资源包}
+调用 addDefaultAssets 会把framework/framework-res.apk 加入资源管理器，
+bootanimation 就调用了他。
+
+addDefaultAssets 是对 addAssetPath 的包装，而应用程序自己的资源包就 使用
+addAssetPath，对Android 应用来讲 PackageParser.java , ActivityThread.java
+会使用到的。
+对于PackageParser.java 来讲，他是要获取并解析 AndroidManifest.xml 中的内容。
+对于ActivityThread.java 来讲，他把 AssetManager 加入到 Resources，应用会使用
+Resources 获取资源的。 对于 Resources 来讲，framework-res.apk 在AssetManager
+对象创建时就已经加入的资源管理器。
+
+\subsection{获取资源文件}
+AssetManager 提供了如下几个函数：\footnote{资源管理器中， Asset 代表的是一个文
+件。 AssetDir 表示目录。}
+\begin{enumerate*}
+    \item open\\ 打开apk中未压缩的文件。AssetManager 的open 函数会在name 前加上 "assets"。比如，
+        bootanimation 中打开文件"images/android-logo-shine.png" 就是
+        获取 framework-res.apk 中的压缩文件assets/images/android-logo-shine.png
+    \item openNonAsset \\ 获取apk经压缩处理的文件。比如经过 android_util_AssetManager.cpp,
+        AssetManager.java 的封装，成为 Android 层AssetManager 的
+        openXmlResourceParser。 打开apk包里xml文件，并以解析器的形式返回，如
+        PackageParser.java  的 parsePackage \footnote{JarFile 也可以获得apk包
+        里的文件，见 collectCertificates}：
+\begin{lstlisting}
+XmlResourceParser parser = null;
+AssetManager assmgr = null;
+boolean assetError = true;
+try {
+    assmgr = new AssetManager();
+    int cookie = assmgr.addAssetPath(mArchiveSourcePath);
+    if(cookie != 0) {
+        parser = assmgr.openXmlResourceParser(cookie, "AndroidManifest.xml");
+        assetError = false;
+    } else {
+        Log.w(TAG, "Failed adding asset path:"+mArchiveSourcePath);
+    }
+}
+\end{lstlisting}
+
+    \item getResources \\ 对 getResTable 的封装，获取 apk 包中的
+        resources.arsc 文件的资源接口。 AssetManager 的getResTable 是没有被
+        外面调用的，因为申明为private的成员函数了(AssetManager.h)。
+
+    \item openNonAssetDir \\ aapt 工具使用。
+\end{enumerate*}
+
+\subsection{获取资源的内容}
+这些工作在ResourceTypes.cpp, Asset.cpp 中完成的，对不同类型的资源，使用不同的方法。
+
+\begin{tabular}{lll}
+    AssetManager 接口& 处理资源接口 & 接口文件 \\\hline
+    open & Asset & Asset.c \\\hline
+   \multirow{2}{*}{openNonAsset}  & ResXMLTree & ResourceTypes.cpp \\
+    &Asset &Asset.c\\\hline
+    getResources & ResTable & ResourceTypes.cpp \\\hline
+     openDir& AssetDir &AssetDir.cpp \\\hline
+\end{tabular}
+\\Android 编译后，apk 中文件，有AssetManager 的可以分为以下类别：
+\begin{enumerate*}
+    \item classes.dex \\由虚拟机解析。
+    \item resources.arsc \\由 ResTable 解析，ResTable_header、ResTable_package
+        、ResStringPool_header 等数据结构。
+    \item XML文件\\包括 AndroidManifest.xml 以及res/目
+        录下layout、xml、anim、drawable*、color等目录里xml。
+        \\XML文件在apk中以ResXMLTree形式组织，以方便在设备中解析(ResXMLParser)
+        。涉及 ResXMLTree_header、ResXMLTree_node、
+        ResXMLTree_attribute 等数据结构。
+    \item 原始文件，包括asset目录, res/目录下 drawable 等目录下的png文件、raw
+        目录。 
+    \item META-INF 目录下文件。
+\end{enumerate*}
+上述 resources.arsc、XML文件 的数据是按数据块(chunk)划分的树形结构，
+每个数据块都以 struct ResChunk_header 开头，占8个字节：
+\begin{description*}
+    \item [type] (uint16_t) 表示数据块类型，
+    \item [headerSize] (uint16_t)表示数据块头的大小，
+        他不是struct ResChunk_header 本身大小，而是包含
+        struct ResChunk_header 的数据结构的大小；
+    \item [size] (uint32_t)表示数据块的大小，包括ResChunk_header
+        所在数据结构本身大小，其后附件的一些索引数组，数据以及
+        其包含的其他数据块(chunk)的大小。所以，组织结构相当于一
+        个树形结构，一个跟节点，中间节点可能只是数据，也可能包含
+        其他的数据块。
+\end{description*}
+
+\begin{minipage}{\linewidth}
+\tabcaption{重要数据块的一些特征}
+\begin{tabular}{|llc|}\hline
+    数据结构 & 头部长度 & .arsc起始数据\\
+             & (headerSize) & (type+headerSize)\\\hline
+  ResStringPool_header & 0x1c(28) & 0100 1C00 \\\hline
+  ResTable_header & 0x0c(12) & 0200 0C00 \\
+  ResTable_package & 0x11c(284) & 0002 1C01 \\
+  ResTable_type \footnote{ResTable_config 含有的成员函数不占据内存的, 所以只有
+  32字节。}
+  & 0x34(52) & 0102 3400\\
+  ResTable_typeSpec & 0x10(16) & 0202 1000\\ \hline
+  ResXMLTree_header & 0x08(8)& 0300 0800 \\ 
+  ResXMLTree_node & 0x10(16)& 0[0-4]01 1000\\
+  \hline
+\end{tabular}
+\end{minipage}
+
+数据结构名以 ResTable 开头的适用于 resources.arsc 文件，这个文件以0200 0C00 (
+ResTable_header)开始的。
+
+数据结构名以 ResXMLTree 开头的适用于 xml 文件，这种xml文件以 0300 0800
+(ResXMLTree_header)开始的。
+
+\section{资源表数据结构}
+AssetManager::getResTable 创建的大概流程：
+\begin{lstlisting}
+ResTable* rt = mResources;
+Asset* ass = NULL;
+ass = const_cast<AssetManager*>(this)->
+         openNonAssetInPathLocked("resources.arsc",
+         Asset::ACCESS_BUFFER,
+         ap);
+mResources = rt = new ResTable();
+rt->setParameters(mConfig); //in updateResourceParamsLocked();
+rt->add(ass, (void*)(i+1), !shared);
+\end{lstlisting}
+ResTable 解析 resources.arsc 的成员函数是 add。
+
+\subsection{ResTable_header}
+从数据块角度，resources.arsc是一个 ResTable_header，里面包了一个 ResStringPool_header 数据块和
+一个或多个ResTable_package 数据块，其中 ResTable_package 的个数包含在 ResTable_header
+数据成员 packageCount。见ResourceTypes.h 中数据结构 ResTable_header 定义的说明。
+ResTable_package的类型是RES_TABLE_TYPE(即其包含的ResChunk_header 的 type 值)。
+
+\subsection{ResStringPool_header}
+ResStringPool_header 数据块解析：
+\begin{itemize*}
+    \item stringStart 字符串池数据起始地址的相对于 ResStringPool_header 开始地址的偏移量
+    \item stringCount 字符串池的字符串数量。
+\end{itemize*}
+
+ResStringPool_header 结尾与字符串池数据存放地址之间，有个数组，存放每个字符
+串起始地址相对字符串池数据起始地址的偏移量。
+
+字符串以utf-16编码存放(对ascii字符讲就是占2个字节)，各个
+字符串连接在一起。每个字符串以其字符长度(也是uint16_t数
+据存放)开始，以0x0000结束，长度不包含结尾的0x0000。但是也可
+以在flags 设置UTF8_FLAG (1<<8)，这样字符串就是以UTF-8编码。
+
+ \subsection{ResTable_package}
+ResTable_package 旗下包含了2个ResStringPool_header，
+\begin{description*}
+    \item [资源类型\label{restype}符号表] 例如 attr, drawable, string, layout 等各种资源类型。
+    \item [资源关键字符号表] 比如，values/strings.xml有下面一条： 
+        \\\hbox{<string name="hello">Hello World, Activity!</string>}\\
+        其中， "hello" 就放在关键字符号表，而 "Hello World, Activity!" 放在
+        ResTable_header 中的字符串池中。 对于 drawable, layout中的xml 文件和图片，其文
+        件名放在关键字符号表(不包含扩展名)，文件的路径放在ResTable_header 中的字符串池
+        中,例如，layout/main.xml，关键字符号表包含字符串"main" ,ResTable_header 
+        中的字符串池包含字符串"layout/main.xml"。
+\end{description*}
+ResTable_package 中这两个字符串池后面跟一个或多个ResTable_type 
+和 ResTable_typeSpec 数据结构。
+结构是以一个 ResTable_typeSpec + 掩码数组 + ResTable_type 组成一个单元，这样一
+个单元可以描述一个R.java的内部类，比如 R.drawable，R.string等。 R.java 里有几个内部类，就
+有几个这样的单元。R.java中，attr类总是存在的，不管其有无属性，其他的有属性则存在，无
+则不存在。不过，attr没有属性时，仅有ResTable_typeSpec，没有掩码数组 + ResTable_type。
+
+\subsubsection{ResTable_typeSpec}
+每个资源类型\ref{restype}(resource type)必须有一个ResTable_typeSpec.
+其id 从1 开始， 1，2，3，4，依次递增。 entryCount 可以为0，这样的 typeSpec 也
+会出现的，当为0时，后面没有数组，若不为0，typeSpec后面就跟着entryCount个
+uint32_t数据，一个unit32_t 表示一个配置的掩码，表示有是否有多个配置以及是否是
+公开的。
+
+typeSpec 表示的是R.java 中R的内部类， entryCount 表示这些内部类的属性的个数，
+掩码就是表明这些属性在有几个不同配置(或者说是值)。
+例如：下面的R.java 对应的 typeSpec
+%\begin{multicols}{2}
+\begin{lstlisting}[basicstyle=\tiny]
+public final class R {
+    public static final class attr {
+    }
+    public static final class drawable {
+        public static final int icon=0x7f020000;
+        public static final int img=0x7f020001;
+        public static final int star=0x7f020002;
+    }
+    public static final class layout {
+        public static final int main=0x7f030000;
+    }
+    public static final class string {
+        public static final int app_name=0x7f040001;
+        public static final int hello=0x7f040000;
+    }
+}
+\end{lstlisting}
+%\vfill
+%\columnbreak
+\begin{tabular}{lll}
+    内部类 & id & entryCount \\
+    attr & 01 & 0 \\
+    drawable & 02 & 03 \\
+    layout & 03 & 01 \\
+    string &04 & 02\\
+\end{tabular}
+%\end{multicols}
+还可以注意到， id值与内部类属性值的关联， 比如 drawable 的 id 为02，那drawable
+属性值的4-5位便是02, 另外，id - 1 就是 ResTable_package资源类型符号表的索引，
+通过他可以确定是att, layout, string等值.
+. entryCount 就是每个内部类的属性个数。
+
+\subsubsection{ResTable_type}
+每个 ResTable_typeSpec 后面跟的就是 ResTable_type，这两个数据结构都有 id 和
+entryCount数据成员，对这样一对的数据来讲，其id值相等的，entryCount的值也是一样
+的。
+ResTable_type后面跟着 4 * entryCount个字节的数据，是后面 ResTable_entry 数组
+元素的偏移量，其值是： 数组下标 * sizeof(ResTable_entry)。
+再后面就是entryCount 个 ResTable_entry数据，这些ResTable_entry 对起始地址与
+ResTable_type 的起始地址的偏移值就是 entriesStart。
+
+$entriesStart = sizeof(ResTable\_type) + sizeof(uint32\_t) * entryCount;$
+
+ResourceTable::flatten\cref{restblflatten}
+\begin{lstlisting}
+const size_t typeSize = sizeof(ResTable_type) + sizeof(uint32_t)*N;
+.. .. ..
+
+const size_t typeStart = data->getSize();
+
+ResTable_type* tHeader = (ResTable_type*)
+    (((uint8_t*)data->editData(typeStart+typeSize)) + typeStart);
+if (tHeader == NULL) {
+    .. .. ..
+    return NO_MEMORY;
+}
+
+memset(tHeader, 0, sizeof(*tHeader));
+tHeader->header.type = htods(RES_TABLE_TYPE_TYPE);
+tHeader->header.headerSize = htods(sizeof(*tHeader));
+tHeader->id = ti+1;
+tHeader->entryCount = htodl(N);
+tHeader->entriesStart = htodl(typeSize);
+tHeader->config = config;
+\end{lstlisting}
+
+ResTable_type 包含一个 ResTable_config 类型成员 config， 对同一个资源
+类型来讲，可能有多个 ResTable_type 的数据块，每个代表不同的配置。
+
+\subsubsection{ ResTable_entry}
+8个字节长度，开始数据是0x0800,紧接着可能的取值是 0x0000 到 0x0003。
+key 虽是ResStringPool_ref，其实就是一个uint32_t类型的数值，作为
+ResTable_header 中的字符串池的索引值，从0开始计数的。 从R.java来讲，
+ResTable_entry 表示的是其内部类的各个属性， 对于 drawable， 通过key我们可以定
+位这个图片的位置，如 res/drawable/icon.png。
+一个ResTable_entry 跟一个Res_value 或 ResTable_map。
+
+Res_value 
+也是8个字节长度， 开始数据也是 0x0800。
+如果 Res_value 开始的值为0800 0000，ResTable_entry 开始的值为 0800 0003，那么
+Res_value 数据成员data的值，和 ResTable_entry数据成员key的值相等的。
+
+\subsubsection{ResTable_map_entry}
+ResTable_map_entry 是 ResTable_map的派生类，
+ResTable_map_entry 对应的值是 ResTable_map, 就像ResTable_entry 对应的值是
+Res_value。
+
+\section{资源表主要函数}
+主要讲述的是 ResTable 类中的函数。
+其实，生成资源表是 appt 负责，但是与 ResTable 也有关系的。这里不要混淆
+ResourceTable 和ResTable 类了。
+%ResTable 解析 resources.arsc 的成员函数是 add。
+\begin{lstlisting}[language=xml,label=xmlexam,caption={Android XML 举例}]
+<TextView
+    android:text="@string/weekpicker_title"
+    android:textAppearance="?android:attr/textAppearanceMedium"
+    android:layout_gravity="center_horizontal"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" />
+
+<TextView android:id="@+id/headerText"
+    android:layout_width="match_parent"
+    android:layout_height="0dip"
+    android:layout_weight="1.0"
+    android:gravity="center"
+    android:textSize="18sp"/>
+
+<View
+     android:background="@*android:drawable/code_lock_top"
+     android:layout_width="match_parent"
+     android:layout_height="2dip" />
+\end{lstlisting}
+\subsection {stringToValue}\label{strtovalue}
+ResTable::stringToValue 实际上只被 ResourceTable::stringToValue 调用，这是因为
+她只用于构建资源表的，而不是解析/使用资源表的。 ResourceTable 只是aapt用于构造
+ResTable 的类，与使用 apk 无直接关系。
+此函数与Accessor\cref{accessorclass}也有比较紧密的联系。
+在 ResourceTypes.h 中对其的注释是
+\begin{verbatim}
+// Convert a string to a resource value.  Handles standard "@res",
+// "#color", "123", and "0x1bd" types; performs escaping of strings.
+// The resulting value is placed in 'outValue'; if it is a string type,
+// 'outString' receives the string.  If 'attrID' is supplied, the value is
+// type checked against this attribute and it is used to perform enum
+// evaluation.  If 'acccessor' is supplied, it will be used to attempt to
+// resolve resources that do not exist in this ResTable.  If 'attrType' is
+// supplied, the value will be type checked for this format if 'attrID'
+// is not supplied or found.
+\end{verbatim}
+
+ResTable::stringToValue 对属性值作检测， 如属性值开头的
+'@', '\#', '?', "true", "TRUE", "false", "FALSE"。
+ResTable::collectString 对转义字符串以及上面提及的特殊字符会做处理。
+
+\begin{tabular}{lll}
+@  & 表示引用 & TYPE_REFERENCE\\
+\# & 表示颜色 & TYPE_INT_COLOR_*\\
+? & 表示属性 & TYPE_ATTRIBUTE\\
+\end{tabular}
+
+\subsubsection{有关'@'的说明}
+\begin{tabular}{ll}
+@null & 空值，没有引用值。\\
+@+ & 如果资源不存在则创建。一般是android:id="@+id/myid"。\\
+@* & 引用的公共的资源。\\
+@  & 一般的引用，可以是私有的，也可以是公共。\\
+\end{tabular}
+
+\begin{lstlisting}[caption={stringToValue对@的处理代码},label=aterisk,]
+bool createIfNotFound = false;
+const char16_t* resourceRefName;
+int resourceNameLen;
+if (len > 2 && s[1] == '+') {
+    createIfNotFound = true;
+    resourceRefName = s + 2;
+    resourceNameLen = len - 2;
+} else if (len > 2 && s[1] == '*') {
+    enforcePrivate = false;
+    resourceRefName = s + 2;
+    resourceNameLen = len - 2;
+} else {
+    createIfNotFound = false;
+    resourceRefName = s + 1;
+    resourceNameLen = len - 1;
+}
+\end{lstlisting}
+
+通过变量createIfNotFound ，我们可以查到函数调用
+\begin{lstlisting}
+accessor->getCustomResourceWithCreation(package, type, name, createIfNotFound);
+\end{lstlisting}
+使用了此变量。所以，对于"@+"，创建的新的资源项，就在getCustomResourceWithCreation中实现的。
+
+搜索"'@'"，注意带'，有几个地方：
+expandResourceRef, identifierForName, stringToValue, collectString有对其处理。
+
+我们顺着\autoref{aterisk}往下看\label{derefer}，
+\begin{itemize*}
+\item expandResourceRef 把节点属性值分解成包(package)、类型(type)、资源名(name)，见
+        \autoref{idforname}的分析，这个函数一定要返回成功，否则就退出了。
+\item identifierForName 获得资源名对应的id，此函数最后会
+    调用Res_MAKEID产生id，这个函数只
+    是从已有的资源里获取资源的信息来提供id，并不会创建资
+    源\footnote{创建资源请见ResourceTable::addEntry
+    \cref{tableaddentry}}，所以找不到资源时会返回id为0。
+
+    当identifierForName 返回的id 不为0，accessor 参数为null时，stringToValue
+    就返回这个id。 当 accessor 不为 null， 调用其
+    getRemappedPackage，但是现在这个函数只是直接返回参数值，
+    所以，最后其返回的值跟accessor为null时一样的。\autoref{getresid}的第二个
+    实现也是有这种情形。
+
+\item Accessor::getCustomResourceWithCreation 当identifierForName 返回id
+为0，而accessor 不为null（一般这个是成立的,
+因为Accessor是个抽象类，其具体派生类是ResourceTable）就调用这个函数
+对应的就是ResourceTable::getCustomResourceWithCreation\cref{gcrwc}.
+
+\end{itemize*}
+
+\subsection{identifierForName}\label{idforname}
+这里的name指的就是节点的属性值。
+从函数结尾调用 Res_MAKEID 的参数来看，PackageGroup 相当于一个 Pakcage。
+
+包名(packageEnd)以":"作为标志，类型名(typeEnd)以"/"作为标志。
+下面的代码就是解析节点的值中的包名、类型以及入口，
+\begin{lstlisting}[multicols=2,caption=identifierForName解析节点的代码]
+// Figure out the package and type we are looking in...
+
+const char16_t* packageEnd = NULL;
+const char16_t* typeEnd = NULL;
+const char16_t* const nameEnd = name+nameLen;
+const char16_t* p = name;
+while (p < nameEnd) {
+    if (*p == ':') packageEnd = p;
+    else if (*p == '/') typeEnd = p;
+    p++;
+}
+if (*name == '@') name++;
+if (name >= nameEnd) {
+    return 0;
+}
+
+if (packageEnd) {
+    package = name;
+    packageLen = packageEnd-name;
+    name = packageEnd+1;
+} else if (!package) {
+    return 0;
+}
+
+if (typeEnd) {
+    type = name;
+    typeLen = typeEnd-name;
+    name = typeEnd+1;
+} else if (!type) {
+    return 0;
+}
+
+if (name >= nameEnd) {
+    return 0;
+}
+nameLen = nameEnd-name;
+\end{lstlisting}
+ResTable::expandResourceRef开头的部分代码也是处理这个工作。
+这里 包名跳过了'@'，但是'+', '?', '*'未跳过，需要stringToValue
+\cref{strtovalue}处理。
+
+\subsubsection{ 资源项的id生成}
+生成资源id有两种方法：Res_MAKEID宏、函数ResourceTable::makeResId 。
+\begin{lstlisting}[caption={ResourceTypes.h Res_相关的宏定义}]
+/**
+ * Macros for building/splitting resource identifiers.
+ */
+#define Res_VALIDID(resid) (resid != 0)
+#define Res_CHECKID(resid) ((resid&0xFFFF0000) != 0)
+
+#define Res_MAKEID(package, type, entry) \
+    (((package+1)<<24) | (((type+1)&0xFF)<<16) | (entry&0xFFFF))
+
+#define Res_GETPACKAGE(id) ((id>>24)-1)
+#define Res_GETTYPE(id) (((id>>16)&0xFF)-1)
+#define Res_GETENTRY(id) (id&0xFFFF)
+
+#define Res_INTERNALID(resid) ((resid&0xFFFF0000) != 0 && (resid&0xFF0000) == 0)
+#define Res_MAKEINTERNAL(entry) (0x01000000 | (entry&0xFFFF))
+#define Res_MAKEARRAY(entry) (0x02000000 | (entry&0xFFFF))
+
+#define Res_MAXPACKAGE 255
+\end{lstlisting}
+
+\begin{lstlisting}[caption={ResourceTable.h的ResourceTable::makeResId}]
+static inline uint32_t makeResId(uint32_t packageId,
+                                 uint32_t typeId,
+                                 uint32_t nameId)
+{
+    return nameId | (typeId<<16) | (packageId<<24);
+}
+\end{lstlisting}
+
+
+ResTable::identifierForName  打印分析，只负责了   0x7f01xxxx(class attr),  0x7f08xxxx(class id)， 0x7f0dxxxx (class  style)  以及 Android包中的内容。
+
+\subsection{getBasePackageId}
+\begin{lstlisting}
+uint32_t ResTable::getBasePackageId(size_t idx) const
+{
+    if (mError != NO_ERROR) {
+        return 0;
+    }
+    LOG_FATAL_IF(idx >= mPackageGroups.size(),
+                 "Requested package index %d past package count %d",
+                 (int)idx, (int)mPackageGroups.size());
+    return mPackageGroups[idx]->id;
+} 
+\end{lstlisting}
+
+\subsection{Accessor类}\label{accessorclass}
+ResTable::Accessor (ResourceTypes.h) 声明了纯虚成员函数reportError，
+ResourceTable (ResourceTable.h)继承 ResTable::Accessor。
+Accessor 主要是为aapt 实现的，由于asset manger 库和aapt的交换。
+Accessor 只传给 ResTable::stringToValue\cref{strtovalue}使用。
+
+例如代码： 
+\begin{lstlisting}[language=xml]
+<TextView  android:id = "@idd/myTextView"     ... /> 
+\end{lstlisting}
+
+属性“android:id” 的值应该是引用 myTextView 的字符串，即"@id/myTextView"，
+这里多了一个"d"，写成了"idd"。构建资源时就报
+\\\indent“Error： No resource found that matches the given name (at 
+"id" with value '@idd/myTextView')." 
+\\\indent 此错误在函数 ResTable::StringToValue 报出，
+它是调用了ResourceTable::reportError。 
+类似的， getCustomResourceWithCreation 也是这个原理。
+
+
+\subsection{getTableStringBlock}
+android_content_AssetManager_loadResourceValue
+\subsection{getResource / resolveReference}
+
+lockBag
+
+bag_entry 
+    struct bag_entry {
+        ssize_t stringBlock;
+        ResTable_map map;
+    };
+
+
+\section{扩展标记语言文本}
+ResXMLTree 是 ResXMLParser 的派生类，
+ResXMLParser::next    -》 ResXMLParser::nextNode
+ResXMLParser::indexOfAttribute ， 比较简单，遍历元素的所有属性即可。
+ResXMLParser::getAttributeStringValue
+
+ResXMLTree 字面含义应该是个树形结构，其实是个流或者说数列，使用方法
+\begin{lstlisting}
+ResXMLTree block;
+status_t err = parseXMLResource(in, &block, false, true);
+
+if (err != NO_ERROR) {
+        return err;
+    }
+block.next();
+
+block.getElementName(&len);    //获取标记的名字
+size_t len;
+ssize_t itemIdentIdx = block.indexOfAttribute(NULL, "name"); //获取属性名name的属性索引
+if (itemIdentIdx >= 0) {
+    // 通过索引获取属性值
+    itemIdent = String16(block.getAttributeStringValue(itemIdentIdx, &len));
+} 
+\end{lstlisting}
+
+\subsection{声明文件的解析}
+Android 的 AssetManager 对资源的解析中要用到资源 Resouces 类
+PackageParser.java对 AndroidManifest.xml 的解析需要 AndroidManifestActivity
+frameworks/base/core/res/res/values/attrs_manifest.xml
+
+树形结构，树形解析
+PackageParser.parseActivity  解析 activity 标记，并调用
+PackageParser.parseIntent 解析 activity 标记下的 intent-filter
+
+PreferenceInflater.onCreateCustomFromTag 调用 Intent.parseIntent 解析标记，
+而 AliasActivity.parseAlias 也调用Intent.parseIntent 解析 intent 标记
+
+PackageParser 里之所以不使用 Intent.parseIntent 解析 intent-filter
+标签，是因为他希望解析结果以 ItentInfo 
+对象保存，如ServiceIntentInfo、ActivityIntentInfo， 而 Intent.parseIntent
+解析的结果是 Intent 对象。
+但是有一点是相同的，即分层解析。
+以 PackageParser 类为例：
+\begin{enumerate*}
+    \item 解析第一层标记
+类的初始化函数 public Package parsePackage(File, String, DisplayMetrics,
+int) ，主要作了两件事：
+\begin{description*}
+    \item[创建解析文件 AndroidManifest.xml 的解析器]
+    parser = assmgr.openXmlResourceParser(cookie, "AndroidManifest.xml");
+\item [调用解析函数解析]
+    private Package parsePackage(Resources, XmlResourceParser, int, String[])
+    这个函数解析的是 AndroidManifest.xml 中顶级标记 manifest
+    下一层的所有标签，manifest 标记带有 package
+    属性。比如，调用 parseApplication 对 application 标记解析; 调用
+    parsePermission 解析标记 permission; 对标记 instrumentation
+    使用方法 parseInstrumentation 分析。
+    \end{description*}
+\item 解析第二层标记
+以 parseApplication 为例，对application 标记下的子标记 activity，service，provider等分别调用
+parseActivity，parseService，parseProvider 解析。
+
+\item 解析第三层
+再以 parseActivity 为例，调用方法 parseIntent 和 parseMetaData 分别解析标记
+intent-filter 与 meta-data。
+
+\item 解析叶子标记
+所谓叶子标记是其下没有了子标记，节点标记其下有子标记，也就是标记容器。
+对于叶子标记的解析方法就是
+Resources.obtainAttributes。对于节点标记，除了要获取属性 (
+Resources.obtainAttributes )，还有一个重要的功能，就是拉出下一个标记
+(XmlPullParser.next)，如果拉出的标记深度 (XmlPullParser.getDepth)
+大于容器标记深度，就解析，否则退出，这是一种递归算法，保证解析的标记都是同一个层次。
+\end{enumerate*}
+
+XmlPullParser
+解析出来的是流，即按文件中出现的顺序解析节点，而不是节点的层次。采用层次处理解析的标记流，把不同层次的标记放在不同方法，同一个层次的都在一个方法，清晰而简洁。
+\begin{lstlisting}[language=bash,]
+platform$ find . -name "*.java" | xargs grep --color -n -C 0 "implements\s*XmlPullParser"
+./libcore/xml/src/main/java/org/apache/harmony/xml/ExpatPullParser.java:34:public class ExpatPullParser implements XmlPullParser {
+./libcore/xml/src/main/java/org/kxml2/io/KXmlParser.java:33:public class KXmlParser implements XmlPullParser {
+\end{lstlisting}
+
+\section{资源包装工具}
+aapt
+
+aapt p -M AndroidManifest.xml -S res -v
+
+先目录，再文件。先文件，再xml。xml 先节点，再属性，及属性值。
+函数调用顺序（main -> doPackage -> writeResourceSymbols -> writeSymbolClass ->
+writeLayoutClssses -> getAttributeComment)
+
+对AaptAssets.cpp 是处理目录、文件层次的工作，基本元素就是AaptFile，代表的是一
+个文件，而AaptDir 是代表一个目录，可以包括子目录和文件，这是AaptFile在文件系统
+的组织结构，而AaptGroup是Android的文件组织结构，他是把不同AaptDir（即目录）下
+同名的文件组织在一起，这些文件代表了是不同配置下的同一个属性的不同取值。
+而 AaptAssets是 AaptDir的派生类，这个结构是从apk的角度来看的，或者说是表示资源目录的根，
+对于一个apk而言，其运行时不仅仅依赖于其中的 res目录和AndroidManifest.xml，也依赖于
+frameworks-res.apk，甚至有覆盖(overlay)的apk包。
+AaptGroupEntry 也是表示文件，不过附加了Android中的各种配置信息。
+
+Command.c 的 doPackage 是创建apk的函数，其中的bundle(Bundle* )
+主要是处理命令行参数的，是输入内容。
+之后就是解析，主要是创建 AaptAssets 对象，然后调用 buildResources，
+最后调用writeResourceSymbols、writeAPK输出文件。
+
+doRemove Command.cpp
+Bundle 是保存 aapt 命令行信息。
+bundle->getFileSpecCount 命令行中包含的文件数，第一个文件名应该是压缩文件名
+const char* fileName = bundle->getFileSpecEntry(i);
+通过下标获取命令行中的文件名。
+
+
+\begin{lstlisting}[caption=doPackage的核心代码,] 
+// Load the assets.
+assets = new AaptAssets();
+err = assets->slurpFromArgs(bundle);
+.. .. ..
+
+// If they asked for any files that need to be compiled, do so.
+if (bundle->getResourceSourceDirs().size() || 
+    bundle->getAndroidManifestFile()) {
+    err = buildResources(bundle, assets);
+    .. .. ..
+}
+\end{lstlisting}
+
+\tabcaption{aapt 主要源码一览}
+\begin{tabular}{ll}
+Main.cpp & 程序入口，解析命令行参数。\\
+Commands.cpp & 执行aapt的各种命令，是处理框架。\\
+Resource.cpp & apk 资源解析的处理模块，\\
+    &全局函数及类PackageInfo, ResourceDirIterator实现\\
+AaptAssets.cpp & AaptAssets,AaptDir,AaptGroup,\\
+    &AaptFile,AaptGroupEntry类的实现\\
+Package.cpp &  实现函数writeAPK。 \\
+ResourceTable.cpp & ResourceTable, ResourceTable::Package,\\
+    &ResourceTable::Type,ResourceTable::ConfigList,\\ 
+    &ResourceTable::Entry, ResourceTable::Item,\\
+    &ResourceFilter 等类的实现，\\
+    &compileXmlFile， compileResourceFile 等函数的实现。\\
+Images.cpp & preProcessImage, postProcessImage 实现，\\
+&其他函数都是内部函数\\
+XMLNode.cpp & XMLNode 类以及函数parseXMLResource实现\\
+StringPool.cpp & StringPool 类的实现。\\
+SourcePos.cpp & ErrorPos, SourcePos类的实现。\\
+ZipEntry.cpp & ZipEntry, ZipEntry::LocalFileHeader, ZipEntry::CentralDirEntry
+类实现\\
+ZipFile.cpp & ZipFile, ZipFile::EndOfCentralDir类实现。\\
+\end{tabular}
+
+\subsection{主要数据结构}
+\subsubsection{AaptDir}
+AaptDir::slurpFullTree 先把当前目录下的文件和目录的路径全保存到fileNames，然后
+遍历fileNames，若是目录，并已存入mDir，则从mDir取出
+subdir(sp<AaptDir>)，否则创建subdir，并对subdir调用slurpFullTree，最后把subdir存入mDir。
+假如是文件，创建一个file(sp<AaptFile>)，然后调用addLeafFile，addLeafFile 先以
+文件名从mFiles 获取所对应的AaptGroup，如失败则创建AaptGroup，并和文件名一起加
+入到mFiles，最后把file(sp<AaptFile>)加入到AaptGroup。这种情形应该是不同名录下
+，同名的文件加入到一个AaptGroup，比如res目录各个 drawable*目录下同名的png文件
+，又或者各个value下string.xml，等等。
+
+\begin{lstlisting}
+    String8 mLeaf;
+    String8 mPath;
+
+    DefaultKeyedVector<String8, sp<AaptGroup> > mFiles;
+    DefaultKeyedVector<String8, sp<AaptDir> > mDirs;
+\end{lstlisting}
+AaptAssets.cpp 函数 isHidden 根据文件名把一些特定的目录和文件排除掉。
+AaptAssets::slurpResourceTree 及 AaptDir::slurpFullTree 用到。
+AaptAssets::slurpResourceTree 只被 AaptAssets::slurpFromArgs 调用到。
+
+Resource.cpp 中定义的函数 collect_files
+
+\subsubsection{AaptGroup}
+AaptGroup ： A group of related files (the same file, with different vendor/locale variations).
+ 他的一个主要数据结构是 ：
+
+\begin{lstlisting}
+    String8 mLeaf;
+    String8 mPath;
+
+    DefaultKeyedVector<AaptGroupEntry, sp<AaptFile> > mFiles;
+\end{lstlisting}
+从这里可见， AaptGroup 是一系列 AaptFile 的有序集合，这些 AaptFile 以
+AaptGroupEntry 的次序排列。为此 AaptGroupEntry 提供了 compare
+来比较两个对象的大小，这个函数其实按一定顺序比较各个数据成员
+（这个顺序其实就是数据成员的优先级）。
+
+各个AaptGroup可以用字符串作为关键字，所以这些关键字也是这个AaptGroup的
+一个属性或者说附加信息，而且在一个AaptDir内是唯一的：
+\begin{lstlisting}[caption=AaptDir的属性]
+    DefaultKeyedVector<String8, sp<AaptGroup> > mFiles;
+\end{lstlisting}
+
+\subsubsection{AaptAssets}
+AaptAssets 是aapt中核心的数据结构，Images.cpp、AaptAssets.cpp、
+Package.cpp、ResourceTable.cpp、Resource.cpp、XMLNode.cpp、Command.cpp 
+等文件都见到她的身影。而相对来讲，AaptDir只是AaptAssets的基类，主要负责
+处理文件收集、归类的一般性工作，AaptAssets.cpp、Package.cpp、Resource.cpp
+、AaptAssets.h中有出现。
+
+resDir 根据参数指定的目录名返回一个 AaptDir 智能指针,  resDirs()
+返回的是一个列表，元素是 AaptDir 的智能指针
+
+\subsubsection{AaptFile}
+AaptFile 说是文件，其实更恰当的是一个buffer，他不关心 buffer
+数据的格式、含义，只管申请空间、读、写数据。buffer相关的数据成员，如mData
+即指向buffer， mDataSize 标示 mData 里使用的空间，mBufferSize 是 mData
+总的空间 （从这里看出代码命名的混乱）。
+虽然对buffer里面内容不关心，但是在buffer整体标示，AaptFile
+还是有相关的数据成员，如mGroupEntry 是 AaptGroupEntry，mResourceType （String8），以及
+原来的文件名、路径和数据压缩算法等相关信息。
+
+\subsubsection{AaptGroupEntry}
+AaptGroupEntry 作为 AaptFile 的关键字，就像String8 对于 AaptGroup，
+AaptGroupEntry 也是每个 AaptFile的附加信息，在一个AaptGroup的各个
+AaptFile可以以AaptGroupEntry区别，这就是说一个文件的不同配置下的具体内容，
+如values-zh-rCN, values, values-zh-rTW目录中的strings.xml的标志:
+\begin{lstlisting}[caption=AaptDir的属性]
+DefaultKeyedVector<AaptGroupEntry, sp<AaptFile> > mFiles;
+\end{lstlisting}
+
+
+AaptGroupEntry 类似于 ResTable_config,  IMSI,
+语言、屏幕大小、分辨率、尺寸规格、键盘等等，当然有版本号，
+不然版本升级时由于数据不兼容而产生严重的错误。 为此
+ AaptGroupEntry 提供了 compare 来比较两个对象的大小，
+这个函数其实按一定顺序比较各个数据成员（这个顺序其实就
+是数据成员的优先级）。而这些数据成员都是String8 类型的，
+String8 类也提供了 compare 方法，他也就是调用了strcmp，
+所以到底还是字符串比较。
+\subsubsection{ResourceTypeSet}\label{restypeset}
+资源类型
+从 buildResources 中的代码看到：
+\begin{lstlisting}
+    sp<ResourceTypeSet> drawables;
+    sp<ResourceTypeSet> layouts;
+    sp<ResourceTypeSet> anims;
+    sp<ResourceTypeSet> xmls;
+    sp<ResourceTypeSet> raws;
+    sp<ResourceTypeSet> colors;
+    sp<ResourceTypeSet> menus;
+\end{lstlisting}
+ 比如 
+drawadble-hdpi/icon.png, drawable/icon.png, drawable-ldpi/icon.png
+组成一个 AaptGroup， drawable-hdpi/background.png,
+ drawable/background.png, drawable-ldpi/backgoround.png 组成有一个
+AaptGroup, 这两个AaptGroup 均属于 drawable 资源类型。所有drawable
+资源类型的 AaptGroup 就组成了一个 ResourceTypeSet。比如，xml 文件
+也按这种方式组织。 
+\subsubsection{ResourceDirIterator}\label{resdirit}
+遍历一个ResourceTypeSet中包含的所有文件。
+过程是遍历一个AaptGroup的AaptFile，再遍历下一个AaptGroup中的AaptFile，直至
+把ResourceTypeSet中的所有AaptGroup遍历完毕。
+核心是next(), 还提供了一系列获得当前文件的各种属性的函数。
+
+\subsection{Resource.cpp 主要函数}
+Resource.cpp\cite{1} 是解析、编译的主要源文件，包括入口，处理，输出，辅助等几类功能的
+函数。
+\subsubsection{buildResources}\label{buildres}
+这是解析输入的核心函数。根据其代码里的注释，可以看到处理流程：
+\begin{lstlisting}
+ // First, look for a package file to parse.  This is required to
+ // be able to generate the resource information.
+ .. .. ..
+ 
+// --------------------------------------------------------------
+ // First, gather all resource information.
+ // --------------------------------------------------------------
+ .. .. ..  
+
+ // --------------------------------------------------------------
+ // Assignment of resource IDs and initial generation of resource table.
+ // -------------------------------------------------------------
+
+
+ // --------------------------------------------------------------
+ // Finally, we can now we can compile XML files, which may 
+ // reference resources.
+ // -------------------------------------------------------------- 
+ .. .. ..
+
+// --------------------------------------------------------------
+ // Generate the final resource table.
+ // Re-flatten because we may have added new resource IDs
+ // -------------------------------------------------------------- 
+ .. .. ..
+\end{lstlisting}
+大概分五步：
+\begin{itemize*}
+    \item package file 就是指 AndroidManifest.xml，使用 parsePackage 解析
+        获取包名(android:package 属性值)，并以此初始化ResourceTable类的对象
+        table\label{initresourcetbl}，把asset(AaptAssets)加入到table中。
+    \item 收集资源信息。
+        \begin{itemize*}
+            \item 集合文件。调用对asset调用 collect_files，结果放入 resources。
+                asset 调用 setResources，保存resources。
+            \item 遍历资源的覆盖，并收集文件。 AaptAssets 成员
+                  mOverlay (sp<AaptAssets>), 假如他有赋值，则想上面一样处理，代码
+                  稍有不同，结果是一样的。
+                 因为都是 AaptAssets。而从 AaptAssets 角度，这个 mOverlay 也有
+                 自己的 mOverlay，所以循环直至 mOverlay 为空。
+\begin{lstlisting}
+sp<AaptAssets> current = assets->getOverlay();
+while(current.get()) { //current 是栈对象，不为空，get 说明有指向对象
+    KeyedVector<String8, sp<ResourceTypeSet> > *resources 
+       = new KeyedVector<String8, sp<ResourceTypeSet> >;
+    current->setResources(resources);
+    collect_files(current, resources);
+    current = current->getOverlay();
+}
+\end{lstlisting}
+            \item 对drawable，layout，anim，xml，raw，color，menu资源
+                  类型调用applyFileOverlay，结构保存到drawables, 
+                  layouts, anims, xmls, raws, colors, menus 变量。
+            \item 对drawables 先调用 preProcessImages，再调用 
+                  makeFileResources；对 layouts, anims, xmls, raws 
+                  调用 makeFileResources\cref{makefileres}。
+            \item 编译资源。 对 AaptAssets 及其 overlay 的values 类型AaptFile
+                  调用compileResourceFile\cref{compileresfile}。
+            \item 针对colors，menus 调用makeFileResources。
+
+        \end{itemize*}
+
+     \item  调用 table.assignResourceIds()\cref{assignresids}， 分配资源 IDs，生成初始资源表。
+     \item  编译 XML 文件，因为这里涉及了交叉引用的问题。
+        \begin{itemize*}
+            \item 对 layout， anim， xml 资源类型的变量 layouts, anims, xmls
+            使用compileXmlFile; 
+            \item 对drawable的各个目录使用postProcessImages处理;
+            \item 对 color,menu资源类型使用compileXmlFile;
+            \item 编译 AndroidMainfest.xml 文件。
+        \end{itemize*}
+    \item 生成最终的资源表。把类R的符号加入table，并调用
+        table.flatten()，因为可能要分配新的ID。 
+\end{itemize*}
+\subsubsection{makeFileResources}\label{makefileres}
+makeFileResources 是以文件作为资源单位编译，使用 ResourceDirIterator
+\cref{resdirit} 枚举ResourceTypeSet文件，对文件作三个步骤：
+\begin{itemize*}
+\item 对文件名作判断（文件名只能在[a-z0-9_.]中取值，所以大写字母是不行的），
+\item 调用 table->addEntry\cref{tableaddentry}把文件加入到 ResourceTable 的一个Entry中，
+\item assets->addResource\cref{aaptassetsaddres}，把文件加入到 AaptAssets 
+        中的相关数据，形成树形目录结构 。
+\end{itemize*}
+
+这个 Entry 的源位置是文件路径，行号为0, Package ， type 就是
+makeFileResources 最后参数，即目录名就是类型名， name 是文件名， value
+是路径（根据平台，会把"$\backslash$" 转换为 "/"）。               %\textbackslash
+注意到 makeFileResources 的最后参数，她不仅仅作为目录名给
+ResourceDirIterator 枚举文件， 而且在table->addEntry 作为 Type。
+
+Type has an ConfigList , ConfigDescription
+Entry has associated structure Item and SourcePos
+SourcePos has only two member: filename, line number
+For Id, which attribute name is “android:id”,  the finename is “<generated>”, and line number is 0.  
+The following statement in function ResourceTable::Entry::generateAttributes tell us this information:
+  status_t err = table->addEntry(SourcePos(String8("<generated>"), 0), package,
+                                               id16, key, value);
+
+ ResourceTable* table,   table->addEntry   .
+                    Const sp<AaptAssets>\& assets  assets->addResource 
+因为知道，估计 addEntry 是构建 内存 XML 模型树，Assets 是加入到。Apk包中的文件。  
+从此入手 ，搜索"addEntry"， compileResourceFile （）  ， generateAttributes
+
+\subsubsection{isValidResourceType}
+\begin{lstlisting}
+bool isValidResourceType(const String8& type)
+{
+    return type == "anim" || type == "drawable" || type == "layout"
+        || type == "values" || type == "xml" || type == "raw"
+        || type == "color" || type == "menu";
+}
+\end{lstlisting}
+
+\subsubsection{parsePackage}
+调用 parseXMLResource 处理 AndroidManifest.xml 文件，涉及节点"package"以及
+"uses-sdk"。AaptAssets 根据 "package"的值调用 setPackage 。
+
+buildResources 是其唯一被调用的地方。
+从其中代码可以，AaptGroup 的是同名文件的集合，对于 "AndroidManifest.xml"只需取其第一个即可。
+\begin{lstlisting}
+status_t buildResources(Bundle* bundle, const sp<AaptAssets>& assets)
+{
+    // First, look for a package file to parse.  This is required to
+    // be able to generate the resource information.
+    sp<AaptGroup> androidManifestFile =
+            assets->getFiles().valueFor(String8("AndroidManifest.xml"));
+    if (androidManifestFile == NULL) {
+        fprintf(stderr, "ERROR: No AndroidManifest.xml file found.\n");
+        return UNKNOWN_ERROR;
+    }
+
+    status_t err = parsePackage(bundle, assets, androidManifestFile);
+    .. .. ..
+}
+
+static status_t parsePackage(Bundle* bundle, const sp<AaptAssets>& assets, const sp<AaptGroup>& grp)
+{
+    .. .. ..
+    sp<AaptFile> file = grp->getFiles().valueAt(0);
+
+    ResXMLTree block;
+    status_t err = parseXMLResource(file, &block);
+    .. .. ..
+}
+\end{lstlisting}
+\subsubsection{collect_files}
+这个函数就是把AaptDir 中的 AaptGroup 中按资源类型
+（ResourceType）组织为ResourceTypeSet\cref{restypeset}。
+不同的ResourceTypeSet 以链表resources
+(KeyedVector<String8, sp<ResourceTypeSet> >*)
+保存在一起。
+
+他遍历 AaptDir 的各个 AaptGroup，然后取出AaptFile的链表
+files，由于 AaptGroup 中保存的 AaptFile 的mResourceType 是一样的，
+所以就对第一个AaptFile 调用 getResourceType()获取资源类型。
+获取资源类型资源，查看 resources 中有无此资源类型，无则创建资源
+类型set， 把AaptGroup 加入到set，再把set挂到列表resources。若已有，
+则查看资源类型有无相同的AaptGroup，这是根据 AaptGroup 的 mLeaf (即文件名)
+，没有AaptGroup 就简单，把他加入到 set 中即可；如果有的话，把新的 AaptGroup
+的AaptFile 加入到已存在的 AaptGroup 中。
+
+DefaultKeyedVector<AaptGroupEntry, sp<AaptFile>
+
+\subsubsection{getResourceFile}
+getResourceFile 就是为了获取 resources.arsc。
+（assets->getFiles().valueFor(String8("resources.arsc"));）因为 AaptAssets 继承
+ AaptDir， getFiles 是后者实现的，也就是说在AaptAssets的根目录下找resources.arsc 
+这个文件，没有的话就加入 resources.arsc 这个节点
+（assets->addFile(String8("resources.arsc"), AaptGroupEntry(), String8(), NULL, String8());）
+当然也是在根目录下， addFile 也是类 AaptDir的接口
+
+\subsubsection{postProcessImages}
+postProcessImage 处理 drawable 目录。
+\subsubsection{writeResourceSymbols}
+	writeResourceSymbols  生成文件 R.java 及 Manifest.java，
+这两个文件中的头部声明"/* AUTO-GENERATED FILE.  DO NOT MODIFY. ..."
+就是由这个函数打印的，
+但是她仅仅是合成文件名和路径，打印头部声明，真正干活还要靠
+writeSymbolClass ，即 writeResourceSymbols 调用了 writeSymbolClass，
+这两个函数均在 Resource.cpp 实现。
+
+因为可以看到	AUTO-GENERATED FILE.  DO NOT MODIFY.  头部内容
+writeSymbolClass 是干活。
+\subsubsection{writeSymbolClass}
+
+\subsection{ResourceTable.cpp 的主要函数}
+强调一下，ResourceTable 的对象是在 buildResources 函数开始创建的，别的地方
+没有创建他的。
+\subsubsection{compileXmlFile}
+compileXmlFile 是以文件为单位编译的，编译后还是一个文件，
+但不再是文本文件， 而是二进制文件， APK 资源的目录结构和
+源代码中的一样，即编译前后文件的相对路径（从 res 开始）没
+改变。 R.java 相对应的资源是 resources.arsc，这里当然有以
+文件为单位的资源索引，也有像 resources 标记下的各种资源。
+
+\begin{lstlisting}
+  status_t err = root->parseValues(assets, table);
+  err = root->flatten(target,
+            (options&XML_COMPILE_STRIP_COMMENTS) != 0,
+            (options&XML_COMPILE_STRIP_RAW_VALUES) != 0);
+            
+  //设置文件的压缩算法
+  target->setCompressionMethod(ZipEntry::kCompressDeflated);
+        
+  assignResourceIds    
+   
+  generateAttributes
+  setIndex    setEntryIndex
+  sp<Entry>::assignResourceIds   
+\end{lstlisting}
+
+\subsubsection{compileResourceFile}\label{compileresfile}
+compileResourceFile  从函数体开头部分字符串的定义可知，其解析 <resources/> 标签下的元素，
+\begin{itemize*}
+    \item Top-level tag :                     resources 
+    \item Identifier declaration tags :       declare-styleable, attr
+    \item Data creation organizational tags : string, drawable, color, bool,
+        integer, dimen, fraction, style, plurals, array, string-array,
+        integer-array, public-padding, private-symbols, add-resource, skip,
+        eat-comment
+    \item Data creation tags :       bag, item
+    \item Attribute type constants : enum 
+    \item plural values :            other, zero, one, two, few, many, 
+    \item useful attribute names and special values:  name, translatable, false
+\end{itemize*}
+最后两个不是tag，而是属性名和值
+
+\begin{lstlisting}[language=xml,label=xmlexam2,caption={Android XML 举例(续)}]
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <dimen name="title_texture_width">120px</dimen>
+  <color name="delete_color_filter">#A5FF0000</color>  
+  <integer name="config_allAppsBatchSize">0</integer>
+  <bool name="lockscreen_isPortrait">true</bool>
+
+  <style name="AnimationPreview">
+      <item name="android:windowEnterAnimation">@anim/fade_in_fast</item>
+      <item name="android:windowExitAnimation">@anim/fade_out_fast</item>
+  </style>
+
+  <string-array name="menu_task_operation">
+  	<item>@string/switch</item>
+  	<item>@string/uninstall</item>
+  </string-array>
+
+  <attr name="direction">
+      <enum name="vertical" value="0" />
+      <enum name="horizontal" value="1" />
+  </attr>
+
+  <skip />
+  <style name="Widget.KeyboardView" parent="android:Widget">
+      <item name="android:background">@android:drawable/keyboard_background</item>
+      <item name="android:keyBackground">@android:drawable/btn_keyboard_key</item>
+      <item name="android:verticalCorrection">-10dip</item>
+      <item name="android:shadowColor">#BB000000</item>
+  </style>
+
+  <declare-styleable name="Favorite">
+      <attr name="className" format="string" />
+      <attr name="title" format="reference" />
+  </declare-styleable>
+  <declare-styleable name="AndroidManifestApplication" parent="AndroidManifest">
+      <attr name="name" />
+      <attr name="theme" />
+      <attr name="label" />
+      <attr name="icon" />
+      .. .. ..
+  </declare-styleable>
+  <private-symbols package="com.android.internal" />
+  <public type="attr" name="screenDensity" id="0x010102cb" />
+  <public type="drawable" name="presence_video_away" id="0x010800ac" />
+  <public type="style" name="Theme.Wallpaper.NoTitleBar" id="0x0103005f" />
+
+\end{lstlisting}
+compileResourceFile 函数比较庞大，有 800 多行， 但是结构还是简单的。
+原理跟 PackageParser.java 解析 AndroidManifest.xml
+一样，即把标记流按层处理，这也是流-拉模型的典型处理方法了。下面简单分析一下:
+\begin{itemize*}
+    \item 定义标签变量\\基本上变量名就是标签名加上16，标签名有'-'，变量名换为'
+        _'，比如 string16 表示标签"string"。
+\begin{lstlisting}
+const String16 skip16("skip");
+const String16 eat_comment16("eat-comment");
+
+// Data creation tags.
+const String16 bag16("bag");
+const String16 item16("item");
+\end{lstlisting}
+    \item parseXMLResource\cref{parsexmlres}\\
+这个函数比较简单，现在不清楚具体做什么，但可以肯定的是她调用 XML
+解析器引擎初始化 ResXMLTree 结构。
+    \item 拉出 resources 标记\\
+跳过所有的（命名空间）声明后，判断是否为标记，然后检查标记名
+\begin{lstlisting}
+if (strcmp16(block.getElementName(&len), resources16.string()) != 0) {
+    ... ...
+    return UNKNOWN_ERROR;
+}
+\end{lstlisting}
+resources16 就是值为 "resources" 的常量对象。
+\item 处理 resources 标记\\
+    这个语句块的结构如下：
+\begin{lstlisting}
+while ((code=block.next()) != ResXMLTree::END_DOCUMENT && code != ResXMLTree::BAD_DOCUMENT) {
+    if (code == ResXMLTree::START_TAG) {
+        ... ...    // 处理tag语句块
+    }
+    else if (code == ResXMLTree::START_NAMESPACE || code == ResXMLTree::END_NAMESPACE) {
+    }
+    else if (code == ResXMLTree::TEXT) {
+        if (isWhitespace(block.getText(&len))) {
+            continue;
+        }
+        ... ...
+        return UNKNOWN_ERROR;
+    }
+}
+\end{lstlisting}
+\end{itemize*}
+
+处理 tag 语句块基本结构就是 if-else if-else 的控制语句，判断条件就是 tag
+名，tag处理一般形式如下：
+\begin{lstlisting}
+if (strcmp16(block.getElementName(&len), skip16.string()) == 0) {
+       ... ... // 子标记解析语句块  
+       while ((code=block.next()) != ResXMLTree::END_DOCUMENT
+               && code != ResXMLTree::BAD_DOCUMENT) {
+           if (code == ResXMLTree::END_TAG) {
+               if (strcmp16(block.getElementName(&len), skip16.string()) == 0) {
+                   break;
+               }
+           }
+           else if (code == ResXMLTree::START_TAG) {
+               ... ... //子标记中的子标记处理语句
+           }
+       }
+       continue;
+
+   } else if () {
+       ......
+   }
+\end{lstlisting}
+针对每个标签要给下列的值赋值：
+curTag ,curType ,curFormat ,curIsBag ,curIsBagReplaceOnOverwrite ,curIsStyled 
+,curIsPseudolocalizable ,curIsFormatted localHasErrors 
+
+skip16、eat_comment16 最简单的形式，继续拉，直至标记结束，没有解析语句，因为这
+两标签是注释的。同样是xml的注释，放在这两个标签里的注释是不会出现在R.java 或 Manifest.java
+\par
+public16， public_padding16， private_symbols16，add_resource16，
+有子标记解析语句块;
+\par attr16 调用了 compileAttribute 处理。
+\par declare_styleable16 标记处理比较麻烦，因为底下又子标记，
+所以有子标记中的子标记处理语句，这些标记有
+skip16， eat_comment16， attr16 。(addSymbol, appendComment) 
+以上这些标签处理完了直接continue， 执行下一次大循环。
+\par
+item16，string16，drawable16，color16, bool16, integer16, dimen16,
+fraction16 以及 bag16， style16， plurals16， array16， string_array16，
+integer_array16
+根据标记名仅仅作了少量处理，比如设置了一些变量名，然后放在后面统一处理。他们都有一个共通的特点，就是有"name"属性。
+但自bag16后的标记，需要是个容器或者说袋子，里面还有 item16
+标记要处理，与 declare_styleable16 ，处理大概流程就是上面的代码片断，完了调用 parseAndAddBag
+。前面的其他标记处理就比较简单，调用 parseAndAddEntry 即可。
+
+因为对这些标签处理都是比较类似的，在他们的if/else if 里面只是
+修改了 curTag ,curType ,curFormat ,curIsBag 值，然后统一处理，
+不想上面的，直接continue，跳到大的while循环。
+对数组(array, string16-array)、复数、style 都是bag，是个容器，要
+确定其父节点：
+\begin{lstlisting}
+String16 ident;
+ssize_t identIdx = block.indexOfAttribute(NULL, "name");
+if (identIdx >= 0) {
+    ident = String16(block.getAttributeStringValue(identIdx, &len));
+} else {
+.. .. ..
+// Figure out the parent of this bag...
+String16 parentIdent;
+ssize_t parentIdentIdx = block.indexOfAttribute(NULL, "parent");
+if (parentIdentIdx >= 0) {
+    parentIdent = String16(block.getAttributeStringValue(parentIdentIdx, &len));
+} else {
+    ssize_t sep = ident.findLast('.');
+    if (sep >= 0) {
+        parentIdent.setTo(ident, sep);
+    }
+}
+\end{lstlisting}
+bag 的父节点先是查找属性parent的值，若无则分析属性name的值，其值"."之前的部分
+就是其父节点。
+\begin{lstlisting}
+<style name="Theme.Dialog.AppError">
+<style name="Theme.SearchBar" parent="Theme.Panel">
+\end{lstlisting}
+第一种，父节点就是Theme.Dialog的style。第二种，父节点是Theme.Panel的style。
+
+\subsubsection{compileAttribute}
+compileAttribute(R.java declare-style的属性的产生)
+
+\subsubsection{ResourceTable:addIncludedResources}
+回过头看，buildResources 开头的一条语句 
+\begin{lstlisting}
+err = table.addIncludedResources(bundle, assets);
+\end{lstlisting}
+ ResourceTable::addIncludedResources 函数的最后面调用 ResourceTable::getType
+ 建立了 attr 类型，即 attr 类，这就是 R.java 的开头总是能看到内部类attr，即使是空的。
+
+\subsubsection{Package类和ResourceTable::getPackage}\label{getpackage}
+\begin{lstlisting}
+            mHaveAppPackage = true;
+            p = new Package(package, 127);
+        } else {
+            p = new Package(package, mNextPackageId);
+        }
+\end{lstlisting}
+127 即0x7F, 这是R.java常见的0x7fxxxxxx的来源吧？ Entry.
+Package 表示一个apk包，或者说是R类。
+
+
+ResourceTable::getPackage 跟 mNextPackageId 关系不大， mNextPackageId 为2
+“*** NEW PACKAGE: "com.android.speechrecorder" id=127”
+ResourceTable::mNextPackageId 与分配的Package ID 关系密切，
+ResourceTable::ResourceTable 构造函数把 此值初始化为1。  
+Package ID 的值一般只有两个 \\
+\begin{tabular}{ll}
+1  & →  android \\
+127 & → com.android.launcher\\
+\end{tabular}\\
+android、com.android.launcher 是 AndroidManifest.xml 的 "manifest"标记的
+package属性值，只不过一个是 frameworks/base/core/res下的，表示Android系统的，
+一个是普通应用程序的。
+
+仅在ResourceTable.cpp模块内部使用， 由getPackage 创建Package 对象。
+搜索\verb|"new\s*Package"|即可定位创建对象的地方。
+
+\subsubsection{Type类和ResourceTable::getType}\label{restblgtype}
+ResourceTable::Package::getType 包装， 先在mType查找，找不到创建一个Type对象。
+获取 Type，getType 查询 Package 的 mTypes 里有没有这个Type， 查询没有就建立一个。
+
+Type 表示一个R的内部类。
+Type 不直接包含 Entry， 而是包含了 ConfigList
+\begin{lstlisting}
+SortedVector<ConfigDescription> mUniqueConfigs;
+DefaultKeyedVector<String16, sp<ConfigList> > mConfigs;
+Vector<sp<ConfigList> > mOrderedConfigs;
+\end{lstlisting}
+ConfigList 才拥有 Entry：
+\begin{lstlisting}
+DefaultKeyedVector<ConfigDescription, sp<Entry> > mEntries;
+\end{lstlisting}
+也就是说同一个Type的Entry按配置归类，即同一个文件名在有不同配置，
+他们都放在同一个 ConfigList，这就是相当于 AaptGroup。
+ConfigDescription 相当于 AaptGroupEntry, Entry 相当于 AaptFile。
+ConfigDescription 是 ResTable_config 的派生类，但没有增加数据成员，
+ResTable_config 对配置的描述的用union，每个union的域是基本数据类型，
+如uint8_t, uint16_t, uint32_t,面向机器；而AaptGroupEntry 中对配置的描述都是
+String8，即字符串，面向程序员。
+
+\subsubsection{Entry类和ResourceTable::addEntry}\label{tableaddentry}
+他实际上就是ResourceTable::getEntry 包装，后者调用getType
+\cref{restblgtype}获得对应的Type，再调用 Type::getEntry
+获取 Entry。 先查询，若无就new 一个 Entry。
+Entry 表示R的内部类的一个属性。
+
+\subsubsection{ResourceTable::getResId}\label{getresid}
+ 这个函数名对应了三个函数，其获取资源id的过程类似于stringToValue 对引用的解析
+\cref{derefer} 的三部曲： expandResourceRef, identifierForName, 获取资源id。 
+最原始的
+\begin{lstlisting}
+uint32_t ResourceTable::getResId(const String16& ref,
+                                 const String16* defType,
+                                 const String16* defPackage,
+                                 const char** outErrorMsg,
+                                 bool onlyPublic) const
+\end{lstlisting}
+只知道资源项的引用（即完整的资源名），不知到具体类型和包，
+需要调用ResTable::expandResourceRef解析出来，这里注意defPackage在调用时赋为NULL，
+那么，传给expandResourceRef 就是 mAssetsPackage，后者是ResourceTable初始化时赋
+值的\cref{initresourcetbl}。然后他调用上一级的：
+\begin{lstlisting}
+uint32_t ResourceTable::getResId(const String16& package,
+                                 const String16& type,
+                                 const String16& name,
+                                 bool onlyPublic) const
+\end{lstlisting}
+这里知道了包名（package）、类型（type）、资源名（name）,
+他先资源名去查所包含的资源池里有无此资源项
+\begin{lstlisting}
+    uint32_t rid = mAssets->getIncludedResources()
+        .identifierForName(name.string(), name.size(),
+                           type.string(), type.size(),
+                           package.string(), package.size(),
+                           &specFlags);
+\end{lstlisting}
+此后的处理流程也是和 stringToValue 对引用的解析 \cref{derefer}类似的。
+
+如果这个步骤获取不到， 即所包含的资源池没有此资源，在当前解析的资源包里找，
+其原理同 ResourceTable::getCustomResource，虽然getResId 自己写了代码，但是
+一致的。
+
+\begin{lstlisting}
+inline uint32_t ResourceTable::getResId(const sp<Package>& p,
+                                        const sp<Type>& t,
+                                        uint32_t nameId)
+{
+    return makeResId(p->getAssignedId(), t->getIndex(), nameId);
+}
+\end{lstlisting}
+makeResId 就是把三个数值移位，位或运算。
+
+
+\subsubsection{ResourceTable::getCustomResourceWithCreation}\label{gcrwc}
+这个函数会创建新的资源项(Entry),并返回id
+\begin{itemize*}
+\item getCustomResource
+\item addEntry
+\item getResId
+\end{itemize*}
+Custom 就是自定义的意思，针对 “@+”这种。
+创建资源主要是 addEntry。
+\subsubsection{ResourceTable::assignResourceIds}\label{assignresids}
+此函数只被buildResources\cref{buildres} 调用。
+ResourceTable::Entry::assignResourceIds
+ResourceTable::Package::getAssignedId
+ResourceTable::Package:: mIncludedId 只在对象初始化时涉及到
+
+\subsubsection{ResourceTable::flatten}\label{restblflatten}
+
+\subsection{XMLNode.cpp的主要函数}
+\subsubsection{parseXMLResource}\label{parsexmlres}
+parseXMLResource 初始化 XML 解析。 因为 parseXMLResource 调用方法
+XMLNode::parse， 后者正是调用 XML_Parser 解析器引擎。
+XMLNode::parse 通过读取 XML
+文件把标记保存到内存中，解析器的用户数据是一个 ParseState
+类型结构体 （她是 XMLNode 类的私有结构体）变量，解析出来的数据保存在成员stack
+（这是一个Vector对象，元素是sp<XMLNode>），结构体成员 root （sp<XMLNode>
+类型）是指向 stack 中的第一个节点。 TODO：：
+parseXMLResource   转化到 XMLNode 树形结构， 再到 AaptFile，最后到 ResXMLTree
+结构。从XML 的树形-》 Expat 的流 -》 XMLNode 的树 -》 ResXMLTree
+
+\subsection{主要输出函数和数据结构}
+
+\subsubsection{writePublicDefinitions}
+-P  选项（不是-p[ackage]）   指定的文件，  
+<public type="string" name="group_applications" id="0x7f0c000f" />
+
+-G out/target/common/obj/APPS/Launcher2_intermediates/proguard_options
+
+\subsection{Package.cpp主要函数}
+\subsubsection{writeAPK}
+Package.cpp定义的，生成.apk， APK的文件名由getOutputAPKFile获取
+TODO：：可以比较 writeAPK 与 writeSymbolClass 的异同啊！！！
+
+创建一个 ZipFile  文件zip，先由processAssets 对AaptAssets处理，把结果放入
+zip中，然后，processJarFiles 再对zip进行处理，最后，删除不必要的文件。
+
+\subsection{AaptAssets.cpp}
+\subsubsection{AaptDir::makeDir}
+\begin{lstlisting}
+sp<AaptDir> AaptDir::makeDir(const String8& path)
+{
+    String8 name;
+    String8 remain = path;
+
+    sp<AaptDir> subdir = this;
+    while (name = remain.walkPath(&remain), remain != "") {
+        subdir = subdir->makeDir(name);
+    }
+
+    ssize_t i = subdir->mDirs.indexOfKey(name);
+    if (i >= 0) {
+        return subdir->mDirs.valueAt(i);
+    }
+    sp<AaptDir> dir = new AaptDir(name, subdir->mPath.appendPathCopy(name));
+    subdir->mDirs.add(name, dir);
+    return dir;
+}
+\end{lstlisting}
+subdir 初始值是 this。
+对于path为"res"，如果未对其makeDir，while、if两个判断都不成立，创建一个AaptDir，
+并加入到subdir; 以后对其直接makeDir， 在if中返回。 对于 path为 "res/layout/mypng"，初次对其直接makeDir，在while处，第一次name为"res"，
+递归调用返回"res"所在的AaptDir，这时subdir换成了"res"所在的；第二次，name为"layout"，
+while，if为假，新建一个AaptDir，并返回，subdir为"layout"所在的目录,while,if不成立，
+新建AaptDir；两次循环后，name为"mypng"，while 条件不成立，
+循环结束；最先的makeDir才走到if判断，这时 name 为 mypng， if不成立成立。 
+第二次及其后面，对"res/layout"直接makeDir，while循环的makeDir调用中 while不成立，if条件
+成立。
+
+对于 while 要说明一下，发起调用的makeDir的执行中，他要等待while循环执行完毕，才能往下执行。
+而由 while 里发起的makeDir执行中，不管是发起的、还是发起的while中的subdir等，其while循环
+都不会被执行，因为其path参数不含有"/"。 发起的调用在while循环执行结束后(只要其进入了
+while )，subdir 是倒数次级，或是主目录，如 path 为 "res"或"res/drawable",subdir就指向"res"， 
+paht为"res/drawable/mypng", subdir 就是 "drawable"。 这个函数执行的结果
+就是形成跟目录一样的树形结构。 并且返回最末端（最深）的目录所在的目录，如果没有就是他自己。
+
+对于不存在的目录foo/bar/a，通过while循环中的递归，迭代最后，while及if判断都不成立,执行最后的新建AaptDir 对象，最后
+效果同mkdir -p foo/bar/a。 如果 foo/bar/a已存在，那么最后递归到if返回，前面的递归也到if止。所以，while循环可以保证目录创建。
+其最大递归深度与目录的路径深度关联。
+
+while 与 if 的先后顺序可否对换？
+\subsubsection{AaptAssets::addResource}\label{aaptassetsaddres}
+\begin{lstlisting}
+void AaptAssets::addResource(const String8& leafName, const String8& path,
+                const sp<AaptFile>& file, const String8& resType)
+{
+    sp<AaptDir> res = AaptDir::makeDir(kResString);
+    String8 dirname = file->getGroupEntry().toDirName(resType);
+    sp<AaptDir> subdir = res->makeDir(dirname);
+    sp<AaptGroup> grr = new AaptGroup(leafName, path);
+    grr->addFile(file);
+
+    subdir->addFile(leafName, grr); 
+}
+\end{lstlisting}
+ 第一行，由于 AaptAssets 是AaptDir 的派生类，所以可以调用父类的 makeDir，
+kResString 是全局的，指向 "res" 目录。
+所以，res 就是代表目录"res"。 
+
+两个疑问： dirname ，包含“res”？
+每个AaptGroup只有一个文件？ 从addResource 看是这样子的。后续有无合并的动作？
+
+\subsection{注释}
+R.java 里的注释
+函数 compileAttribute、compileResourceFile, mayOrMust, 以及数组 gFormatFlags
+均会给节点增加一点注释。 而 declare-styleable 声明属性时，生成的 attr、
+styleable 内部类及相关的域，会有大量的注释，他们是有 writeLayoutClasses 搞的。
+
+appendComment
+
+\subsection{属性}
+只有在编译时检测到的属性才能在XML layout文件中设置。标签的值列表参见：
+frameworks/base/core/res/res/values/public.xml
+frameworks/base/api/*.xml 
+
+XMLNode.cpp 定义了几个常见的命名空间（NameSpace） 
+XLIFF_XMLNS      RESOURCE_ROOT_NAMESPACE  
+上面的标记会有很多的属性，这些属性怎么来的呢？ 这些属性都是由
+declare-styleable 声明的，Android 系统级的属性，
+参见 SDK 文档
+docs/reference/android/package-summary.html
+docs/reference/android/R.id.html
+或者编译后的文档
+out/target/common/docs/offline-sdk/reference/android/package-summary.html
+out/target/common/docs/offline-sdk/reference/android/R.id.html
+应用中，我们一般把声明属性的 declare-styleable 标记放在文件
+res/values/attrs.xml，而使用这些属性的 XML 文件不能与 attrs.xml
+同目录，即不能放在 res/values，可以放在 res/xml, res/color, res/anim 等等，或者
+res/drawable 也行？
+
+parseStyledString 
+递归函数
+
+ 后者调用调用 compileAttribute (R.java declare-style的属性的产生)
+解析文件中的各个标签。
+
+\subsection{多语言}
+string16 中可能与多语言相关的函数 translatable16, getAttributeStringValue,
+getResourceSourceDirs。
+
+\subsection{覆盖}
+\begin{lstlisting}
+static bool applyFileOverlay(Bundle *bundle,
+                             const sp<AaptAssets>& assets,
+                             sp<ResourceTypeSet> *baseSet,
+                             const char *resType)
+
+    // look for same flavor.  For a given file (strings.xml, for example)
+    // there may be a locale specific or other flavors - we want to match
+    // the same flavor.
+\end{lstlisting}
+
+\subsection{文件压缩}
+ZipFile* zip = openReadWrite(zipFileName, false);
+这个是打开 apk 压缩文件，apk 采用的压缩格式其实就是Zip算法。
+ZipEntry 就是压缩文件的单位文件的数据结构。
+
+\begin{lstlisting}
+ZipEntry* entry = zip->getEntryByName(fileName);
+
+zip->remove(entry);                                        //删除 
+zip->add(fileName, bundle->getCompressionMethod(), NULL);   //增加 
+zip->addGzip     //增加 .gz 文件 
+zip->flush(); 
+delete zip;
+\end{lstlisting}
+
+\begin{comment}
+
+
+frameworks/base/libs/utils/Asset.cpp      _CompressedAsset::getBuffer   
+frameworks/base/include/utils/Asset.h      UNCOMPRESS_DATA_MAX 
+
+
+ResourceTable.cpp  函数 compileAttribute、compileResourceFile、compileXmlFile 
+compileResourceFile、parsePackage 等解析 XML 文件的函数都要调用
+
+platform$ find sdk | xargs grep --color -n -e "android.libraries.res"
+sdk/anttasks/src/com/android/ant/SetupTask.java:551:            antProject.addReference("android.libraries.res", resPath);
+sdk/anttasks/src/com/android/ant/AaptExecLoopTask.java:368:        Object libSrc = taskProject.getReference("android.libraries.res");
+sdk/anttasks/src/com/android/ant/AaptExecLoopTask.java:399:        Object libPath = taskProject.getReference("android.libraries.res");
+
+sdk/anttasks/src/com/android/ant/AaptExecLoopTask.java:301:     private void callAapt(String customPackage) {
+  \end{comment}
+
+\appendix
+%\appendixpage
+\addcontentsline{toc}{section}{附录}\markboth{APPENDICES}{}
+\begin{appendices} 
+\end{appendices}
+
+%加一道横线
+\noindent\rule[-1ex]{\textwidth}{3pt}\\[2.0ex] 
+\addcontentsline{toc}{section}{参考文件}
+\begin{thebibliography}{主要代码}
+    %\bibitem {android的binder驱动} \href{http://blog.sina.com.cn/s/blog_69f669470100s40o.html}{android的binder驱动 进程，线程，线程池},
+    \bibitem{1}frameworks/base/libs/utils/AssetManager.cpp
+    \bibitem{2}frameworks/base/core/jni/android_util_AssetManager.cpp,
+    \bibitem{3}frameworks/base/core/jni/android_util_XmlBlock.cpp,
+    \bibitem{4}frameworks/base/core/jni/android_util_StringBlock.cpp
+    \bibitem{5}frameworks/base/core/java/android/content/res/AssetManager.java
+    \bibitem{6}frameworks/base/core/java/android/content/pm/PackageParser.java
+    \bibitem{7}frameworks/base/core/java/android/content/pm/PackageManager.java
+    \bibitem{8}frameworks/base/native/android/asset_manager.cpp
+    \bibitem{9}
+\end{thebibliography}
+\printindex
+\end{document}

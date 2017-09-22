@@ -1,0 +1,57 @@
+图标设计也是有讲究，一是简洁，和UI风格、背景相融合，突出。具体的论述，参考文档
+http://www.smashingmagazine.com/2009/08/18/android-gui-psd-vector-kit/
+http://www.fluffyspider.com/
+
+Android UI development tools
+http://xebee.xebia.in/2010/10/20/android-ui-development-tools/?utm_source=twitterfeed&utm_medium=twitter
+
+Resources and Internationalization
+http://wing-linux.sourceforge.net/guide/topics/resources/resources-i18n.html
+Available Resource Types
+http://wing-linux.sourceforge.net/guide/topics/resources/available-resources.html
+
+
+android执行所谓的“兼容模式”
+（a）对于大屏幕的，图片进行相应的放大，大小比例一致，但图片会因此而模糊；
+（b）对更小屏幕，则直接提示不能运行
+
+
+android执行所谓的“非兼容模式”，以下是一些应该掌握的技巧
+（1）	不要以具体位置，而以“规格或规则”来放置UI元素
+（2）	以机器的物理尺寸为单位（比如mm，inch）
+（3）	避免以像素为单位（像素跟密度，分辨率对整体显示有影响）
+（a）使用dp或dip，优点是，在物理尺寸一致时，不同的密度值，对应的物理尺寸不变，即不依赖密度。即160dpi的机器上与240dpi的机器上50dip从视觉的大小上来讲是一样的。
+（b）对字体单位使用sp，系统会根据用户选择的字体大小对字体进行合理配比。
+
+（4）	选择可以伸缩的图片
+选择九宫图( nine-patch bitmaps )，以及xml定义的图片（比如GradientDrawable），避免静态图片。
+
+3. 针对以上不能解决的问题，需要创建不同的资源集合
+（a）Default集合，支持默认的拉伸，但拉伸算法会降低应用的执行速度；
+（b）基于密度集合，创建分别以-ldpi, -mdpi, and -hdpi为后缀的资源集合，比如  res/values-hdpi/dimens.xml，是指适合hdpi设备的dimen.xml配置文件；
+（c）基于尺寸集合，创建分别以-small, -normal,  -large为后缀的资源集合，比如res/layout-large-land/，是指适合大屏幕（如WVGA）的横屏布局；
+（d）基于版本集合，创建以-vN（N是对应版本的api级别）格式的资源集合，比如res/drawable-large-v4/，是指大屏幕，android 1.6版本或更新的文件夹。
+If your device is hdpi, the system will pick the hdpi asset. The asset
+will then be scaled at runtime to fit the size of your widget. OpenGL
+ES has absolutely no relationship to this issue since it is not used
+to render applications at the moment.
+
+
+
+
+对于GUI应用来说，选取适当的图片资源是一个重要的主题。比如，在3.7英寸屏看起来很舒服的图标，放在7英寸屏中显得小了；240x320p图片放到480x800p密度会有颗粒感；一个按钮图标对于12号字体大小刚合适，如果字体设为16号，有的文字就绘制到图标外面了。这是图片的适应性问题。
+在Android系统，我们喜欢把图片打包，再与编译后的Java代码放在一个包文件里。这样做，是因为我们在写代码后，通过一个id就可以引用图片，有关细节的工作Android都帮我们做了。而且Android没有开放方法让我们指定加载特定的资源集，她会为硬件和位置探测合适资源集并加载他们，开发者只需根据他们产品的语言或硬件配置提供相应的资源即可。
+
+
+
+
+res/layout/my_layout.xml            // layout for normal screen size
+res/layout-small/my_layout.xml      // layout for small screen size
+res/layout-large/my_layout.xml      // layout for large screen size
+res/layout-large-land/my_layout.xml // layout for large screen size in landscape mode
+
+res/drawable-ldpi/my_icon.png       // icon image for low density
+res/drawable-mdpi/dpi/my_icon.png   // icon for medium density
+res/drawable-hdpi/my_icon.png       // icon image for high density
+
+res/drawable-nodpi/composite.xml    // density independent resource

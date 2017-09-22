@@ -1,0 +1,478 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{verbatim}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%China font%%%%%%%%%%%%%%%%%%%%
+\usepackage{xeCJK}
+\setCJKmainfont{AR PL UKai CN}
+%\setCJKmainfont{Adobe Kaiti Std}
+\setCJKmonofont{文泉驿等宽正黑}
+\setCJKsansfont{Ubuntu}%verbatim 所用字体
+\punctstyle{banjiao}
+%\setCJKfamilyfont{AR PL UKai CN}{kai}
+%\setmainfont{Ubuntu}
+\usepackage{fontspec}% provides font selecting commands
+\usepackage{xunicode}% provides unicode character macros
+\usepackage{xltxtra} % provides some fixes/extras
+\defaultfontfeatures{Scale=MatchLowercase}
+%\setmainfont[Mapping=tex-text]{Baskerville}
+%\setsansfont[Mapping=tex-text]{Skia}
+%\setmonofont{Courier}
+
+\usepackage{longtable}
+\usepackage[CJKbookmarks=true,
+bookmarksnumbered=true,
+colorlinks=true,
+% frenchlinks=true, raiselinks=true, xetex,, linktocpage=true 
+citecolor=magenta,
+linkcolor=blue]{hyperref}
+
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{language=java,
+breaklines=true,
+extendedchars=false,
+breakautoindent=true,
+breakindent=10pt,
+xleftmargin=30pt, 
+numbers=left, 
+basicstyle=\scriptsize,
+%numberstyle=\tiny,
+%keywordstyle=\tiny\color{blue!70}, 
+%commentstyle=\color{red!50!green!50!blue!50},
+showspaces=false,
+showstringspaces=false,
+escapeinside={(*@}{@*)} 
+%  frame=shadowbox,
+%  rulesepcolor=\color{red!20!green!20!blue!20}
+}
+\usepackage{underscore}
+
+\marginparwidth 100pt
+\newcommand{\marginal}[1]{%
+\leavevmode\marginpar{\footnotesize\raggedright#1\par}}
+
+\makeatletter
+\newcommand{\figcaption}{\def\@captype{figure}\caption}
+\newcommand{\tabcaption}{\def\@captype{table}\caption}
+\makeatother
+
+%%%%%%%%%%%% watermark %%%%%%%%%%%%%%%%%%
+\usepackage{eso-pic}
+\usepackage{color}
+\makeatletter
+  \AddToShipoutPicture{\rm%
+    \setlength{\@tempdimb}{.5\paperwidth}%
+    \setlength{\@tempdimc}{.5\paperheight}%
+    \setlength{\unitlength}{1pt}%
+    \put(\strip@pt\@tempdimb,\strip@pt\@tempdimc){%
+      \makebox(0,0){\rotatebox{45}{\textcolor[gray]{0.97}%
+      {\fontsize{3cm}{3cm}\selectfont{小手网络}}}}
+    }
+}
+\makeatother
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\addtolength{\headheight}{\baselineskip}
+%\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+%\renewcommand{\subsectionmark}[1]{\markright{#1}}
+%\rhead{\leftmark\\\rightmark}
+
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{makeidx}
+
+\renewcommand{\refname}{参考文献}
+\renewcommand\contentsname{目录}
+\renewcommand\listfigurename{插图目录}
+\renewcommand\listtablename{表格目录}
+\renewcommand\indexname{索引}
+\renewcommand\appendixname{附录}
+\renewcommand\figurename{图}
+\renewcommand\tablename{表}
+\renewcommand{\lstlistlistingname}{代码列表集}
+\renewcommand{\lstlistingname}{代码}
+
+\def\equationautorefname{公式}
+\def\figureautorefname{图}
+\def\subfigureautorefname{子图}
+\def\sectionautorefname{节}
+\def\subsectionautorefname{子节}
+\def\subsubsectionautorefname{小节}
+\def\Itemautorefname{项}
+\def\tableautorefname{表格}
+\def\footnoteautorefname{脚注} 
+\def\appendixautorefname{附录}
+\author{小手网}
+\title{Java 编程规范}
+\date{\today}
+\makeindex
+\begin{document}
+\maketitle
+\begin{multicols}{2}
+\tableofcontents
+\lstlistoflistings
+\end{multicols}
+
+\tabcaption{修改记录}
+\begin{tabular}{|p{0.1\textwidth}|p{0.1\textwidth}|p{0.2\textwidth}
+    |p{0.3\textwidth}|p{0.1\textwidth}|}\hline
+    日期 & 修订版本 & 修改章节 & 修改描述 & 作者\\\hline
+    & v0.1 & & 草稿 & 徐申龙 \\\hline
+\end{tabular}
+
+\section{命名规范}
+\begin{enumerate} 
+    \item 标识符的命名要清晰、明了，有明确含义，同时使用完整的单词或大家基本可以理解的缩写，避免误解。
+    \item 除非必要，不要用数字或较奇怪的字符来定义标识符。
+    \item 命名中若使用特殊约定或缩写，则要有注释说明。
+    \item 含有集合意义的属性命名，尽量包含其复数的意义。
+    \item 属性名可以和公有方法参数相同，不能和局部变量相同，引用非静态
+        成员变量时使用 this 引用，引用静态成员变量时使用类名引用。
+\begin{lstlisting}
+public class Person {
+    private String name;
+    private static List properties;
+
+    public void setName (String name) {
+        this.name = name;
+    }
+
+    public void setProperties (List properties) {
+        Person.properties = properties;
+    }
+}
+\end{lstlisting}
+    \item 用正确的反义词组命名具有互斥意义的变量或相反动作的函数等。
+        \tabcaption{ 常见的反义词 }
+        \begin{tabular}{lll} 
+            add / remove    & begin / end      & create / destroy \\
+            insert / delete & first / last     & get / release \\
+            up / down       & put / get        & cut / paste \\
+            add / delete    & lock / unlock    & open / close \\
+            min / max       & old / new        & start / stop \\
+            next / previous & source / target  & show / hide \\
+            send / receive  & source / destination  & increment / decrement
+        \end{tabular}
+\end{enumerate}
+
+%\begin{longtable}{|p{0.15\textwidth}|p{0.6\textwidth}|p{0.15\textwidth}|}\hline
+%\end{longtable}
+\subsection{命名的大小写}
+\begin{enumerate}
+    \item 包名 \hfill\\一般由有3到4个单词组成，全部小写，以"."连接。
+        我们项目规定，以com.xiaoshou为前缀，
+        以工程名结尾，如 com.xiaoshou.video。
+    \item 类，接口 \hfill\\ 由一个或几个单词组成，每个单词
+        的第一个字母大写。类一般由名词词组命名，如StringBuffer。
+        接口还可以使用形容词，如Runnable, Comparable。
+    \item 方法 \hfill\\ 也由一个或几个单词组成，第一个单词全小写，其余的单词首
+        字母大写。变量名不应以下划线或美元符号开头，尽管这在语法上是允许的。
+        \tabcaption{ 方法命名的一些规则 }
+        \begin{tabular}{p{0.25\textwidth}p{0.25\textwidth}p{0.25\textwidth}}\hline
+           获取、设置属性值的方法 &形如getXxx(),\newline setXxx(). &
+           getPersonInfo(), \newline setPersonInfo.\\\hline
+           转换对象类型返回不同类型的方法 &形如 toType &
+           toString(),\newline toArray()\\\hline
+           返回不同视图的方法 & 形如asType()  & 
+           asList(), \newline asGrid()\\\hline
+           返回与对象原始类型的值方法 & 形如typeValue() & 
+           intValue(),\newline floatValue() \\\hline
+           判断状态，返回布尔值 & 形如 isXxx() & isFinish()\\\hline
+        \end{tabular}
+    \item 域（属性） \hfill\\
+        普通域和方法的命名形式一致。 静态的域(也称常量域)由一个或多
+        个被下划线分开的单词组成，全部大写。
+    \item 局部变量\hfill\\
+        命名与域相同，可以使用简写。
+\end{enumerate}
+
+\subsection{缩写}
+较短的单词可通过去掉“元音”形成缩写；较长的单词可取单词的头几个字母形成缩写；还
+有些单词有公认的缩写。
+\tabcaption{ 常见的缩写 }
+\begin{tabular}{lll} 
+    temp      ->  tmp & 
+    flag      ->  flg &
+    statistic ->  stat \\ 
+    increment ->  inc  &
+    message   ->  msg  &
+    reference ->  ref \\
+    pointer   ->  ptr & 
+    information -> info &\\
+\end{tabular}
+
+如果函数名超过15 个字母，可采用以去掉元音字母的方法或
+者以行业内约定俗成的缩写方式缩写函数名。例如，
+getCustomerInformation()改为getCustomerInfo()。
+
+\section{排版规范}
+\subsection{白空间}
+白空间是指空格、退格键(Tab) 以及换行。
+记号（包括关键字、变量、常量）与 操作符要适度加入空格。
+\begin{enumerate}
+    \item 逗号、分号只在后面加空格。
+    \item 双目运算符\footnote{双目运算符包括比较运算符：\kern10pt < > >= <= !=
+        \hskip15pt 赋值运算符：\kern10pt = -= += /= \%= *= \hskip15pt 
+        算术运算符：\kern10pt + - \% *}前后要加空格。
+    \item 三元运算符中间要加空格。 
+    \item if for while swith 与括号之间加空格。
+    \item 单目运算符\footnote{单目运算符包括： ! \~{} ++ -- \& . ::}前后不加空格。
+\end{enumerate}
+\begin{lstlisting}[language=java,multicols=2,label=space,
+    caption=白空间使用示例, showspaces=true,
+    showstringspaces=false, numbers=none, frame=shadowbox]
+    int a, b, c;
+    a = b + c;
+    a *= 2;
+    a = b ^ 2;
+    a++;
+    p.id = pid;
+\end{lstlisting}
+\subsection{缩进}
+\begin{enumerate}
+    \item 每层的缩进长度为4个空格。
+    \item 在编辑器设置中，把退格键设成4个空格的长度。
+    \item 类、接口、方法定义开始，循环、判断、分支
+        (包括case下的语句)等控制语句等后面换行缩进。
+\end{enumerate}
+\subsection{换行}
+\begin{enumerate}
+    \item 包括白空间在内一行不要超过78个ASCII字符。
+    \item 长表达式要在低优先级操作符处划分新行，操作符放在新
+        行之首，划分出的新行要进行适当的缩进。
+    \item 不允许把多个短语句写在一行中，即一行只写一条语句。
+        \footnote{一条语句可以跨多行书写。}
+    \item 逻辑相对独立的程序块之间、变量说明之后必须加空行。
+\end{enumerate}
+\section{注释规范}
+注释的目的是解释代码的目的、功能和采用的方法，提供
+代码以外的信息，帮助读者理解代码，防止没必要的重复
+注释信息。
+
+\begin{enumerate}
+    \item 源代码文件开始有版权声明、作者等信息，后面要有修改记录。
+    \item 在代码的功能、意图层次上进行注释，提供有用、额外的信息。
+        注释不宜过多，显而易见的内容就不做注释。
+    \item 提供给其他模块的接口，要写明参数、返回值的含义，接口的作用。
+    \item 未具体实现的接口/功能，可以用 "//TODO" 标明，实现后要删除。
+    \item 提交代码，不要保留大片的注释代码，应删除、精减。
+    \item 一般情况下，源程序有效注释量在30％左右为宜。
+\end{enumerate}
+%\pagecolor{yellow}
+\columnseprule.8pt 
+\caption{注释示例}
+\begin{multicols}{2}
+\hfill
+如下注释意义不大。
+\begin{lstlisting}[numbers=none,basicstyle=\small, backgroundcolor=\color{yellow}] 
+// 如果 receiveFlag 为真
+if (receiveFlag)
+\end{lstlisting}
+
+%    \columnbreak	
+\vskip9pt
+而如下注释则给出了额外有用的信息 
+\begin{lstlisting}[numbers=none,basicstyle=\small,
+    backgroundcolor=\color{yellow}]
+// 如果从连接收到消息 
+if (receiveFlag)
+\end{lstlisting}
+
+\vskip9pt
+一些复杂的代码需要说明，如下面对闰年算法的说明
+\begin{lstlisting}[numbers=none,basicstyle=\scriptsize,
+ backgroundcolor=\color{yellow}]
+boolean isLeapYear(int year) {
+   . . . . . .
+
+/* 1. 如果能被4整除，是闰年；
+ * 2. 如果能被100整除，不是闰年；
+ * 3. 如果能被400整除，是闰年。
+ */
+   . . . . . . 
+
+}
+ 
+\end{lstlisting}
+\end{multicols}
+
+
+
+\section{实现代码规范}
+\begin{enumerate} 
+    \item 文件要用UTF-8编码， Unix换行格式。不要使用cp936、
+        gb1232、gb18030编码，Dos风格的换行。
+    \item 方法体不要太长，尽量不超过200行， 60到70行是比较合适的。
+    \item 如果多段代码重复做同一件事情，那么在方法的划分上可能存在问题。
+    \item 关系较为紧密的代码应尽可能相邻。
+    \item 应明确规定对接口方法参数的合法性检查应由方法
+        的调用者负责还是由接口方法本身负责，缺省是由方法调用者负责。
+        \footnote {对于模块间接口方法的参数的合法性检查这一问题，
+        往往有两个极端现象，即：要么是调用者和被调用者对参数均不
+        作合法性检查，结果就遗漏了合法性检查这一必要的处理过程，
+        造成问题隐患；要么就是调用者和被调用者均对参数进行合法性
+        检查，这种情况虽不会造成问题，但产生了冗余代码，降低了效率。}
+    \item 数据库的设计要尽量考虑向前兼容和以后的版本升级，
+        并为某些未来可能的应用保留余地（如预留一些属性等）。
+\end{enumerate}
+
+\subsection{语法的注意实现}
+\begin{enumerate} 
+    \item 编码要有防错处理，如对空指针要做判断，避免异常的扩散。
+        可能有产生异常的代码，放到try\ldots catch。
+    \item 避免使用不易理解的数字，用有意义的标识来替代。涉及物理状态或
+        者含有物理意义的常量，不应直接使用数字，必须用有意义的静态变量来代替。
+    \item 注意运算符的优先级，并用括号明确表达式的操作顺序，避免使用默认
+        优先级。
+    \item 明确方法功能，精确（而不是近似）地实现方法设计。
+        一个函数仅完成一件功能，即使简单功能也应该编写方法实现。
+    \item 明确类的功能，精确（而非近似）地实现类的设计。一个类仅实现一组相近的功能。
+        划分类的时候，应该尽量把逻辑处理、数据和显示分离，实现类功能的单一性。
+    \item 所有的数据类必须重载toString() 方法，返回该类有意义的内容。
+        父类如果实现了比较合理的toString() ，子类可以继承不必再重写。
+\end{enumerate}
+
+
+\subsection{避免内存泄漏}
+\begin{enumerate}
+    \item 数据库游标、文件I/O操作等需要使用结束close()的对象必须在
+        try-catch-finally 的finally中close()。
+    \item 集合中的数据如果不使用了应该及时释放，尤其是可重复使用的集合。
+        \\由于集合保存了对象的句柄，虚拟机的垃圾收集器就不会回收。 
+    \item 代码中注册的ContentObserver,BroadcastReceiver 对象在 
+        Activity 销毁前要取消注册。
+    \item Bitmap 对象在使用后，要及时回收。
+\end{enumerate}
+\begin{lstlisting}[language=java,basicstyle=\scriptsize,caption=内存泄漏示例]
+public class Blackboard extends Activity {
+    private final static String TAG = "MemoryLeakTest";
+
+    private static Drawable mBackground;
+    static List<byte[]> mRawData = new ArrayList<byte[]>();
+
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);        
+
+        TextView label = new TextView(this);
+        mBackground = getResources().getDrawable(R.drawable.greatwall);
+        Bitmap mBitmap = BitmapFactory.decodeResource(getResources(), 
+                                        R.drawable.greatwall); 
+        label.setBackgroundDrawable(mBackground); 
+        setContentView(label); 
+
+        //staticCollectionLeak();
+        //fileLeakTest();
+        //cursorLeakTest();
+        //registerLeakTest();
+        contentObserverLeakTest();
+    }
+
+    /*
+     * 测试结果： 造成 dalvik 的内存泄漏。 hprof 可以定位。
+     */
+    private void staticCollectionLeak() {
+        byte[] mass = new byte[8 * 1024 * 1024];
+        mRawData.add(mass);
+    }
+
+    /*
+     * IO 未 close. 
+     */
+    private void fileLeakTest( ) {
+        try{
+            FileOutputStream fos;
+            int i = 0;
+            String contents = "Write some test to file\n";
+            fos = openFileOutput("fileLeakTest.txt", MODE_PRIVATE);
+            while (i++ < 1000) {
+                fos.write(contents.getBytes());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "oops, catch Exception " + e);
+        } finally {
+            //fos.close();
+        }
+    }
+
+    /*
+     * 测试结果： IntentFilter 未 unregisterReceiver 会造成native
+     * 内存泄漏。 但当进程重启时会报错：
+     *    Activity com.xiaoshou.classroom.Blackboard has leaked
+     *    IntentReceiver com.xiaoshou.classroom.Blackboard$1@40525d08
+     *    that was originally registered here. Are you missing a call
+     *    to unregisterReceiver()?
+     */
+    private void registerLeakTest() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_DATE_CHANGED);
+        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(mIntentReceiver, filter);
+    }
+
+    /*
+     * 测试结果： 未unregisterContentObserver 时会造成 native 内存泄漏。
+     */
+    private void contentObserverLeakTest() {
+        getContentResolver().registerContentObserver(
+                Settings.System.CONTENT_URI, true, mDateFomat);
+    }
+
+    /*
+     * 测试结果： Cursor 未 close 时会有如下警告，有时要多测几次：
+     *    StrictMode  E  Finalizing a Cursor that has not been 
+     *    deactivated or closed. database = 
+     *    /data/data/com.android.soundrecorder/databases/simple,
+     *    table = soundrecorder, query = SELECT * FROM soundrecorder
+     *    ORDER BY _id
+     */ 
+    private void cursorLeakTest() {
+        String[] projection = new String[] {Media._ID, Media.TITLE};
+        Cursor cursorImage = managedQuery(Media.EXTERNAL_CONTENT_URI, 
+                      projection, null, null, Media.DATE_TAKEN + " ASC");
+    }
+
+    private final ContentObserver mDateFomat = 
+        new ContentObserver(new Handler()) {
+            public void onChange(boolean selfChange) {
+            }
+    };
+
+    private final BroadcastReceiver mIntentReceiver = 
+                                        new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (Intent.ACTION_DATE_CHANGED.equals(action)) {
+            } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+            }
+        }
+    };
+}
+\end{lstlisting}
+
+\subsection{异常处理}
+\begin{enumerate}
+    \item 异常捕获后，如果不对该异常进行处理，则应该输出
+        日志或者调用栈Exception.printStackTrace()。若有
+        特殊原因必须用注释加以说明。
+    \item 一个方法不应抛出太多类型的异常。
+    \item 异常捕获尽量不要直接 catch (Exception ex)，应该把异常细分处理。
+    \item 在程序中使用异常处理还是使用错误返回码处理，根据是否有利于程
+        序结构来确定，并且异常和错误码不应该混合使用，推荐使用异常。
+        \footnote{一个系统或者模块应该统一规划异常类型和返回码的含义。 
+        但是不能用异常来做一般流程处理的方式，不要过多地使用异常，异常的处理效
+        率比条件分支低，而且异常的跳转流程难以预测。}
+\end{enumerate}
+
+\subsection{日志}
+\begin{enumerate}
+    \item 在异常处理、防错处理的代码块，要有日志。
+    \item 增加日志调试开关，在发行版本关闭调试，开发的调试版本打开。
+    \item 在提交代码前，删除不需要的调试 log，避免过多的日志。
+    \item 尽量避免使用 System.out.println，首选android.util.Log，比如 Log.d, Log.e, Log.w
+\end{enumerate}
+%\medbreak
+%\vfill\eject
+%\appendix
+%\addcontentsline{toc}{section}{Appendices}\markboth{APPENDICES}{}
+%\section{代码审查表}
+\end{document}

@@ -1,0 +1,1314 @@
+\documentclass[a4paper,11pt,]{article}% a4paper - A4纸 11pt -字体 twoside -双面 openany -新章节可在偶数页开始
+%\usepackage{CJKutf8}%Chinese layout
+\usepackage{xeCJK}
+\setCJKmainfont{FangSong}
+\setCJKmonofont{Adobe Kaiti Std}
+\punctstyle{banjiao}
+%\setCJKfamilyfont{AR PL UKai CN}{kai}
+\setmainfont{DejaVu Sans}
+\pagestyle{empty} %不显示页码
+%\input{pagegeometry}%自定义的文件，设置页面参数
+%\usepackage{amsmath,amsthm,amsfonts,amssymb,bm} % 数学宏包
+%\usepackage{graphicx,psfrag}                    % 图形宏包
+\usepackage{makeidx}                            % 建立索引宏包
+\usepackage[titletoc]{appendix}
+\usepackage{verbatim}
+\usepackage{comment}
+\usepackage{mdwlist}
+\usepackage{underscore}%正文使用_
+\usepackage{ifthen}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows,decorations.pathmorphing,positioning,backgrounds,chains,fit,calc,petri,through,shapes}
+\usepackage[shell,tikz]{dot2texi}
+\usepackage[CJKbookmarks=true, bookmarksnumbered=true,
+colorlinks=true,% frenchlinks=true, raiselinks=true, xetex,, linktocpage=true 
+citecolor=magenta, linkcolor=blue]{hyperref}
+\usepackage{listings}%源代码宏包,such as C/C++ code
+\lstset{language=C,
+    breaklines=true,
+    extendedchars=false,
+    breakautoindent=true,
+    breakindent=10pt,
+    numbers=left, 
+    basicstyle=\tiny,%\scriptsize,
+    numberstyle=\tiny,
+    keywordstyle=\tiny\color{blue!70}, 
+    commentstyle=\color{red!50!green!50!blue!50},
+    escapeinside={(*@}{@*)}, 
+    %  columns=cfixed,
+    resetmargins=true 
+    %  frame=shadowbox,
+    %  rulesepcolor=\color{red!20!green!20!blue!20}
+}
+\setlength{\parskip}{6pt}
+
+\title{Android Wifi}
+\author{shecenon@gmail.com}
+
+\begin{document}
+%\rmfamily
+%\sffamily
+\ttfamily
+\maketitle
+% 目录， 标题出现中文，请把.toc中的出错信息删除，或者在标题没有
+% 中文时生成.toc文件，然后再在标题中加入中文, 之后就不会出现乱码的错误， 或者在
+% 文档的末尾加上\newpage(网上的方法，未经证实)
+% 而且要编译两次，甚至三次。
+\tableofcontents
+\printindex
+\newpage
+\renewcommand{\refname}{参考文献}
+\renewcommand\contentsname{目录}
+\renewcommand\listfigurename{插图目录}
+\renewcommand\listtablename{表格目录}
+\renewcommand\indexname{索引}
+\renewcommand\appendixname{附录}
+\renewcommand\figurename{图}
+\renewcommand\tablename{表}
+\renewcommand{\lstlistlistingname}{代码列表集}
+\renewcommand{\lstlistingname}{代码}
+
+\def\equationautorefname{公式}%
+\def\figureautorefname{图}%
+\def\subfigureautorefname{子图}%
+\def\sectionautorefname{节}%
+\def\subsectionautorefname{子节}%
+\def\subsubsectionautorefname{小节}%
+\def\Itemautorefname{项}%
+\def\tableautorefname{表格}%
+\def\footnoteautorefname{脚注} 
+\def\appendixautorefname{附录}
+\newcommand{\invoke}[1]{\\ -\textgreater\hspace{#1}}
+\newcommand{\methodnode}[3]{\rnode{#3}{\psframebox{#1#2\ref{#1}~#3}}\vspace{20pt}\newline }
+\newcommand{\methodcall}[2]{\ncarc{->}{#1}{#2}\ncput*{call}}
+%\tiny
+\small
+\part{Android Wifi}
+\section{概述wpa_supplicant}
+\begin{verbatim}
+wpa_supplicant module actually provider  wpa_supplicant and libwpa_client, the
+former is a executable program, act as wpa service who defined by init.rc, the
+latter is a share library used by HAL, that is libhardware_legacy.
+libwpa_client only contains os_unix.c and wpa_ctrl.c,
+attention that wpa_ctrl.c only exist in libwpa_client, not in wpa_supplicant.
+\end{verbatim}
+
+\subsection{WifiMonitor.MonitorThread}
+previewThread is the origin region of the recording data callback.
+%\begin{figure}
+%\begin{center} \end{center}
+%\psset{nodesep=6pt}
+%\methodnode{WifiStateTracker}{.java}{startEventLoop}
+%\methodnode{WifiMonitor}{.java}{startMonitoring}
+%\methodnode{WifiMonitor}{.java}{MonitorThread}
+%\methodcall{startEventLoop}{startMonitoring}
+%\methodcall{startMonitoring}{MonitorThread}
+%\end{figure}
+run()
+handleEvent
+\index{}
+\begin{enumerate}  
+    \item{start wifi}
+
+        WifiService.setWifiEnabledBlocking( ) 
+
+        mWifiStateTracker.loadDriver()  MESSAGE_ENABLE_WIFI 
+
+    \item{scan }
+
+        startScan MESSAGE_START_SCAN
+
+    \item{connect AP}
+
+        WifiService.enableNetwork()
+
+        mWifiStateTracker.enableNetwork(netId, disableOthers);
+\end{enumerate}
+
+\section{初始化}
+\begin{dot2tex}[neato,autosize]
+graph G {
+    node [shape=rectangle];
+    main -> {init; addiface; run}[style="arrows=->"];
+    addiface -> {initiface; initiface2}[style="arrows=->"];
+    init -> {eaps; eloopinit; wsgci}[style="arrows=->"];
+    run -> elooprun[style="arrows=->"];
+
+    run [label="wpa_supplicant_run"];
+    init [label="wpa_supplicant_init"];
+    addiface [label="wpa_supplicant_add_iface"];
+    elooprun [label="eloop_run"];
+    eaps[label="eap_peer_register_methods"];
+    eloopinit[label="eloop_init"];
+    wsgci[label="wpa_supplicant_global_ctrl_iface_init"];
+    initiface[label="wpa_supplicant_init_iface"];
+    initiface2[label="wpa_supplicant_init_iface2"];
+}
+\end{dot2tex}
+
+\begin{dot2tex}[dot,autosize]
+graph G {
+    node [shape=rectangle];
+    initiface -- {setdrv; config}[style="arrows=->"];
+    setdrv -- drivers[style="arrows=->"];
+
+    initiface[label="wpa_supplicant_init_iface"];
+    setdrv[label="wpa_supplicant_set_driver"];
+    config[label="wpa_config_read"];
+    drivers[label="wpa_supplicant_drivers"];
+}
+\end{dot2tex}
+
+
+
+\begin{dot2tex}[neato,autosize]
+graph G {
+    node [shape=rectangle];
+    initiface2 -> {initeapol; drvinit; initwpa; driverinit; ctrlifaceinit; initiface}[style="arrows=->"];
+    initwpa -> {initsm}[style="arrows=->"];
+    driverinit -> {initl2}[style="arrows=->"];
+
+    initiface2[label="wpa_supplicant_init_iface2"];
+    initeapol [label="wpa_supplicant_init_eapol"];
+    drvinit [label="wpa_drv_init"];
+    initwpa [label="wpa_supplicant_init_wpa"];
+    driverinit [label="wpa_supplicant_driver_init"];
+    ctrlifaceinit [label="wpa_supplicant_ctrl_iface_init"];
+    initiface[label="ieee80211_sta_init"];
+
+    initsm [label="wpa_sm_init"];
+    initl2 [label="l2_packet_init"];
+}
+\end{dot2tex}
+
+\begin{lstlisting}[language=C,caption=wpa_driver_wext_init] 
+    struct wpa_driver_wext_data (*@\underline{ *drv;}@*)
+    drv->ioctl_sock = socket(PF_INET, SOCK_DGRAM, 0);
+    . . .
+    s = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    . . .
+    eloop_register_read_sock(s, wpa_driver_wext_event_receive, drv, ctx);
+    drv->event_sock = s;
+\end{lstlisting}
+
+\normalsize
+驱动和EAP的注册是类似的，：
+wpa_supplicant_add_iface -> wpa_supplicant_init_iface -> wpa_supplicant_set_driver ->
+drivers.c  wpa_supplicant_drivers -> driver_wext.c wpa_driver_wext_ops -> ioctl
+
+eap_methods.c eap_peer_register_methods  -> eap_psk.c eap_peer_psk_register
+
+wpa_supplicant_add_iface -> wpa_supplicant_init_iface2 ->wpa_supplicant_init_eapol, wpa_drv_init,
+wpa_drv_get_ifname, wpa_supplicant_init_wpa, wpa_supplicant_driver_init, wpa_supplicant_ctrl_iface_init
+ieee80211_sta_init
+
+wpa_drv_init  与  wpa_supplicant_driver_init 的区别：
+
+wpa_drv_init 是调用了struct wpa_supplicant里的 driver->init， 
+即 driver_wext 的 wpa_driver_wext_init。
+这个包裹函数在 wpa_supplicant_i.h 定义的，类似的还有 wpa_drv_deinit，
+wpa_drv_set_param， wpa_drv_set_wpa，wpa_drv_scan， wpa_drv_associate，
+wpa_drv_get_bssid 等等。
+
+wpa_supplicant_driver_init 设置接口的参数，所以她必须在wpa_drv_init 之后调用。
+初始化并设置了驱动的参数后，便调用 wpa_supplicant_req_scan 扫描热点了。
+wpa_supplicant_req_scan 调用eloop_register_timeout 把函数 wpa_supplicant_scan
+、数据 struct wpa_supplicant 注册到eloop中\label{regscan}。
+调用wpa_supplicant_req_scan的地方还有：
+wpa_supplicant_scan
+events 模块
+ctrl_iface 模块
+%fixme
+events 模块的函数 wpa_supplicant_event ，这个是路由功能性函数，就像 biner 的
+transact/onTransact。 这个函数就是被 driver_wext 调用的, 除此之外
+wpa_supplicant 模块的 wpa_supplicant_gen_assoc_event,  
+events 模块会调用 sm 模块(wpa.c)，所以，驱动模块会通知 sm 模块的。
+
+\section{事件循环}
+eloop  就是 event loop。 其核心就是 select 。客户调用eloop的注册函数，
+把socket 、 回调函数、 以及上下文相关的数据告诉 eloop。 eloop 在 select 里等待
+，收到消息后，调用注册的回调函数。
+
+最重要的数据是：\\
+static struct eloop_data eloop;
+
+从外部来看，主要是eloop_register_timeout
+\scriptsize\newline
+\begin{tabular}{|p{0.4\textwidth}|p{0.36\textwidth}|p{0.22\textwidth}|}\hline
+    调用者 & 注册的句柄 & 所在源文件\\\hline
+    wpa_driver_wext_scan  & wpa_driver_wext_scan_timeout& driver_wext.c\\\hline
+    wpa_supplicant_event_michael_mic_failure & wpa_supplicant_stop_countermeasures&events.c \\\hline
+    wpa_supplicant_key_neg_complete & wpa_sm_start_preauth & wpa.c\\\hline
+    wpa_supplicant_process_smk_m45 &wpa_supplicant_smk_timeout & wpa.c \\\hline
+    wpa_supplicant_update_smk_lifetime &wpa_supplicant_smk_timeout & wpa.c\\\hline
+    eapol_port_timers_tick & eapol_port_timers_tick & eapol_sm.c\\\hline
+    eapol_sm_step & eapol_sm_step_timeout & eapol_sm.c\\\hline
+    eapol_sm_init & eapol_port_timers_tick & eapol_sm.c\\\hline
+    pmksa_cache_set_expiration & pmksa_cache_expire&pmksa_cache.c \\\hline
+    pmksa_cache_set_expiration & pmksa_cache_reauth&pmksa_cache.c \\\hline
+    rsn_preauth_init & rsn_preauth_timeout & preauth.c \\\hline
+    wpa_supplicant_req_scan &wpa_supplicant_scan &wpa_supplicant.c \\\hline
+    wpa_supplicant_req_auth_timeout &wpa_supplicant_timeout &wpa_supplicant.c \\\hline
+\end{tabular}
+\normalsize
+
+
+eloop_register_read_sock 调用的地方：
+\scriptsize\newline
+\begin{tabular}{|p{0.36\textwidth}|p{0.4\textwidth}|p{0.22\textwidth}|}\hline
+    调用者 & 注册的句柄 & 所在源文件\\\hline
+    wpa_driver_wext_init & wpa_driver_wext_event_receive & driver_wext.c \\\hline
+    wpa_driver_wext_open_mlme & wpa_driver_wext_mlme_read &driver_wext.c \\\hline
+    wpa_supplicant_ctrl_iface_init & wpa_supplicant_ctrl_iface_receive &ctrl_iface_unix.c \\\hline
+    wpa_supplicant_global_ctrl_iface_init & wpa_supplicant_global_ctrl_iface_receive & ctrl_iface_unix.c \\\hline
+    l2_packet_init & l2_packet_receive & l2_packet_linux.c \\\hline
+\end{tabular}
+\normalsize
+eloop_register_read_sock 调用了 eloop_register_sock.
+
+
+wpa_supplicant_run 调用的两个注册函数：
+
+\begin{itemize*}
+    \item eloop_register_signal_terminate
+    \item eloop_register_signal_reconfig
+\end{itemize*}
+wpa_supplicant_run 是这两个函数唯一被调用的地方。 
+注册的句柄分别为：wpa_supplicant_terminate， wpa_supplicant_reconfig
+而 eloop_register_signal 主要别这两个函数调用。
+
+
+
+l2_packet_init
+l2_packet_send 被 wap_supplicant 模块的函数 wpa_ether_send 、
+preauth 模块的函数 rsn_preauth_eapol_send 。由于这两个函数都是静态函数，
+前者被wpa_supplicant_eapol_send、 _wpa_ether_send
+后者赋给了struct eapol_ctx 的指针 eapol_send
+
+rsn preauth 初始化流程:
+wpa_supplicant_ctrl_iface_receive (ctrl_iface_unix.c) 调用
+wpa_supplicant_ctrl_iface_process (ctrl_iface.c) 调用 wpa_supplicant_ctrl_iface_preauth 调用 rsn_preauth_init
+
+
+
+\subsection{套接字}
+socket
+driver_wext.c  wpa_driver_wext_init
+ctrl_iface_unix.c
+l2_packet_linux.c
+
+
+PF_NETLINK 就是 driver_wext.c 模块使用了。
+
+connect
+\begin{lstlisting}[language=,]
+./ctrl_iface_unix.c:352:		if (connect(priv->sock, (struct sockaddr *) &addr,
+./ctrl_iface_unix.c:651:		if (connect(priv->sock, (struct sockaddr *) &addr,
+
+./wpa_ctrl.c:129:	if (connect(ctrl->s, (struct sockaddr *) &ctrl->dest,
+./wpa_ctrl.c:231:	if (connect(ctrl->s, (struct sockaddr *) &ctrl->dest,
+\end{lstlisting}
+
+
+Netlink的RTMGRP_LINK多播群组，用户空间程序可以注册netlink的RTMGRP_LINK多播群组，
+当设备的状态或配置中有变更时，就会用rtmsg_ifinfo把通知信息传送给Link多播群组RTMGRP_LINK，
+其中一些通知信息如下：
+ 
+当netdev_chain通知链收到一个通知信息时，RTnetlink会注册的netdev_chain，
+然后重放其接受到的通知信息。
+当一个已关闭的设备开启时或者处于相反的过程。
+当net_device->flags中的一个标识有变动时。
+netplugd是守护进程，会监听这些通知信息，然后根据用户配置文件而反应。
+
+\begin{lstlisting}[language=,]
+
+./include/linux/rtnetlink.h:520:#define RTMGRP_LINK		1
+
+android_net_ethernet_initEthernetNative
+frameworks/base/core/jni/android_net_ethernet.cpp:319:        addr_poll.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+
+\end{lstlisting}
+
+\begin{lstlisting}{language=,}
+net/wireless/wext-core.c:	nlh = nlmsg_put(skb, 0, 0, RTM_NEWLINK, sizeof(*r), 0);
+net/bridge/br_if.c:	br_ifinfo_notify(RTM_NEWLINK, p);
+net/bridge/br_netlink.c:	if (event == RTM_NEWLINK)
+net/bridge/br_netlink.c:				   cb->nlh->nlmsg_seq, RTM_NEWLINK,
+net/bridge/br_notify.c:		br_ifinfo_notify(RTM_NEWLINK, p);
+net/core/rtnetlink.c:	[RTM_FAM(RTM_NEWLINK)]      = NLMSG_LENGTH(sizeof(struct ifinfomsg)),
+net/core/rtnetlink.c:	[RTM_FAM(RTM_NEWLINK)]      = IFLA_MAX,
+net/core/rtnetlink.c:			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
+net/core/rtnetlink.c:	rtmsg_ifinfo(RTM_NEWLINK, dev, ~0U);
+net/core/rtnetlink.c:	err = rtnl_fill_ifinfo(nskb, dev, RTM_NEWLINK, NETLINK_CB(skb).pid,
+net/core/rtnetlink.c:		rtmsg_ifinfo(RTM_NEWLINK, dev, 0);
+net/core/rtnetlink.c:	rtnl_register(PF_UNSPEC, RTM_NEWLINK, rtnl_newlink, NULL);
+net/core/dev.c:		rtmsg_ifinfo(RTM_NEWLINK, dev, 0);
+net/core/dev.c:	rtmsg_ifinfo(RTM_NEWLINK, dev, IFF_UP|IFF_RUNNING);
+net/core/dev.c:	rtmsg_ifinfo(RTM_NEWLINK, dev, IFF_UP|IFF_RUNNING);
+net/core/dev.c: *	are adjusted, %RTM_NEWLINK is sent to the routing socket and the
+net/core/dev.c:	rtmsg_ifinfo(RTM_NEWLINK, slave, IFF_SLAVE);
+net/core/dev.c:		rtmsg_ifinfo(RTM_NEWLINK, dev, changes);
+net/core/dev.c:		rtmsg_ifinfo(RTM_NEWLINK, dev, ~0U);
+net/core/dev.c:	rtmsg_ifinfo(RTM_NEWLINK, dev, ~0U);
+
+
+
+include/linux/wireless.h: * space. They are encapsulated in the IFLA_WIRELESS field of
+include/linux/if_link.h:	IFLA_WIRELESS,		/* Wireless Extension event - see wireless.h */
+include/linux/if_link.h:#define IFLA_WIRELESS IFLA_WIRELESS
+net/wireless/wext-core.c:	nla = nla_reserve(skb, IFLA_WIRELESS, event_len);
+net/wireless/wext-core.c:	nla = nla_reserve(compskb, IFLA_WIRELESS, event_len);
+\end{lstlisting}
+
+include/linux/netlink.h
+inculde/linux/rtnetlink.h
+
+driver_wext.c
+wpa_driver_wext_event_receive   RTM_NEWLINK
+wpa_driver_wext_event_rtm_newlink IFLA_WIRELESS , IFLA_IFNAME
+
+wpa_driver_wext_event_wireless  在处理 SIOCGIWSCAN ，以及
+wpa_driver_wext_event_link 
+都调用了
+wpa_supplicant_event
+
+总结一下， wpa_driver_wext_event_receive 是 wpa_driver_wext_init 向 eloop 的 eloop_register_read_sock
+注册的回调函数。
+所以，情况是eloop 的select 等到了 socket 有数据了，调用 wext_driver 的回调接口
+，回调接口最后发给了 wpa_supplicant_event.
+
+
+wpa.c 是 wpa 的状态机，
+eapol_sm.c 是 eapol 的状态机。
+eapol_sm_step  最后的 sm->ctx->cb(sm, success, sm->ctx->cb_ctx);
+实际调用的是 rsn_preauth_eapol_cb
+
+
+
+
+
+wext-core.c
+wireless_send_event 调用 rtnetlink_ifinfo_prep
+\begin{lstlisting}
+static struct nlmsghdr *rtnetlink_ifinfo_prep(struct net_device *dev,
+					      struct sk_buff *skb)
+{
+	struct ifinfomsg *r;
+	struct nlmsghdr  *nlh;
+
+	nlh = nlmsg_put(skb, 0, 0, RTM_NEWLINK, sizeof(*r), 0);
+	if (!nlh)
+		return NULL;
+
+	r = nlmsg_data(nlh);
+	r->ifi_family = AF_UNSPEC;
+	r->__ifi_pad = 0;
+	r->ifi_type = dev->type;
+	r->ifi_index = dev->ifindex;
+	r->ifi_flags = dev_get_flags(dev);
+	r->ifi_change = 0;	/* Wireless changes don't affect those flags */
+
+	NLA_PUT_STRING(skb, IFLA_IFNAME, dev->name);
+
+	return nlh;
+ nla_put_failure:
+	nlmsg_cancel(skb, nlh);
+	return NULL;
+}
+\end{lstlisting}
+
+%\begin{dot2tex}[shell,dot]
+%    graph struct{
+%    node [shape=record];
+%        structs [shape=record, label="<f0> |<f1> |<f2> "];
+%        structd [shape=record, label="<f0> |<f1> |<f2> "];
+%        structd -> structs;
+%        }
+%        
+%\end{dot2tex}
+
+\section{接口打开}
+\newcommand{\wpactrl}{wpa\_ctrl.c}
+
+WifiManager is a client of WifiService.
+
+WifiStateTracker is a object class of WifiService, meanwhile WifiStateTracker
+hold WifiService object. 
+
+The relationship between WifiStateTracker and
+WifiMonitor is similar to WifiService and WifiStateTracker.
+
+WifiNative of provider wap supplicant for WifiStateTracker. It through jni
+\verb|android_net_wifi_Wifi.cpp|  call wifi.c, and wifi.c call wap_supplicant
+through wpa_ctrl.c, actually wifi.c is the only caller of wpa_ctrl.c.
+
+wpa_ctrl.c define wpa and HAL socket communicate path , 
+\begin{lstlisting}[language=C]
+static const char *local_socket_dir = "/data/misc/wifi/sockets";
+static const char *local_socket_prefix = "wpa_ctrl_";
+\end{lstlisting}
+
+if system_server pid is 79, then there are two socket that bind to the
+following path:
+ \begin{lstlisting}[language=C]
+/data/misc/wifi/sockets/wpa_ctrl_79-0
+/data/misc/wifi/sockets/wpa_ctrl_79-1
+\end{lstlisting}
+the first is ctrl socket, the last is monitor socket.  wifi.c
+wifi_connect_to_supplicant() do create them by call wpa_ctrl_open("wlan0").
+wpa_ctrl_open also connet these two sockets to /dev/socket/wpa_wlan0 through
+invoke socket_local_client_connect method.
+
+ \begin{lstlisting}[language=,] 
+system/core/libcutils/socket_local_client.c
+system/core/libcutils/socket_local.h:#define ANDROID_RESERVED_SOCKET_PREFIX "/dev/socket/"
+
+
+service wpa_supplicant /system/bin/wpa_supplicant -Dwext -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf -dd
+    user root
+    group system wifi inet 
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+\end{lstlisting}
+The statement `socket wpa_wlan0 dgram 660 wifi wifi` indicate init to create socket /dev/socket/wpa_wlan0
+(this work is done by create_socket in util.c). And init will create
+environment `ANDROID_SOCKET_wlan0`(ANDROID_SOCKET_ENV_PREFIX + `wlan0` ) to achive publish_socket()
+\begin{lstlisting}[language=,] 
+system/core/include/cutils/sockets.h:#define ANDROID_SOCKET_DIR		"/dev/socket"
+\end{lstlisting} 
+
+\begin{lstlisting}[language=bash, caption=init.rc]
+    mkdir /system/etc/wifi 0770 wifi wifi
+    chmod 0770 /system/etc/wifi
+    chmod 0660 /system/etc/wifi/wpa_supplicant.conf
+    chown wifi wifi /system/etc/wifi/wpa_supplicant.conf
+    #wpa_supplicant control socket for android wifi.c (android private socket)
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    chmod 0770 /data/misc/wifi
+    chmod 0660 /data/misc/wifi/wpa_supplicant.conf
+    chown wifi wifi /data/misc/wifi
+    chown wifi wifi /data/misc/wifi/wpa_supplicant.conf
+    setprop wifi.interface "wlan0"
+    #setprop wlan.driver.status "ok"
+
+    service wpa_supplicant /system/bin/wpa_supplicant -Dwext -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf -dd
+        user root
+        group wifi inet 
+        socket wpa_wlan0 dgram 660 wifi wifi   (*@\label{socketwpa}@*) 
+        disabled
+        oneshot
+
+    service dhcpcd /system/bin/dhcpcd -BKL wlan0
+        disabled
+        oneshot 
+\end{lstlisting}
+
+\begin{lstlisting}[language=C,caption=wpa_supplicant_ctrl_iface_init]
+#ifdef ANDROID
+	os_snprintf(addr.sun_path, sizeof(addr.sun_path), "wpa_%s",
+			wpa_s->conf->ctrl_interface);
+	priv->sock = android_get_control_socket(addr.sun_path);
+	if (priv->sock >= 0)
+		goto havesock;
+#endif
+	if (os_strncmp(buf, "DIR=", 4) == 0) {
+		dir = buf + 4;
+		gid_str = os_strstr(dir, " GROUP=");
+		if (gid_str) {
+			*gid_str = '\0';
+			gid_str += 7;
+		}
+	} else {
+		dir = buf;
+		gid_str = wpa_s->conf->ctrl_interface_group;
+	}
+
+         . . .
+havesock:
+	eloop_register_read_sock(priv->sock, wpa_supplicant_ctrl_iface_receive,
+				 wpa_s, priv);
+	wpa_msg_register_cb(wpa_supplicant_ctrl_iface_msg_cb);
+
+\end{lstlisting}
+android_get_control_socket is through environment `ANDROID_SOCKET_wlan0` to
+get socket fd. This socket is created in init.rc \autoref{socketwpa} named  /dev/socket/wpa_wlan0
+.
+
+ 在 ctrl_iface_unix.c 中，
+wpa_supplicant_global_ctrl_iface_init 为套接字注册了回调  wpa_supplicant_global_ctrl_iface_receive
+,  wpa_supplicant_ctrl_iface_init 为套接字注册了回调 wpa_supplicant_ctrl_iface_receive
+他们所以的套接字是unix 域套接字，但是是 Android 作了定制的。
+socket(PF_UNIX, SOCK_DGRAM, 0);
+addr.sun_family = AF_UNIX;
+
+此套接字是 init.rc 定义的由 init 进程创建的，名叫 wpa_wlan0 \autoref{socketwpa}。
+
+wpa_ctrl.c wpa_ctrl_open 也会链接到这个套接字上的。
+wpa_ctrl_attach 发出的指令通过 sock，经wpa_supplicant_ctrl_iface_receive 转发
+给wpa_supplicant_ctrl_iface_attach。
+
+而 wpa_ctrl.c 是给 wpa_cli 命令 和 wifi HAL （即 wifi.c）调用的源码。
+
+wpa_supplicant_ctrl_iface_receive 把大量的处理交给ctrl_iface.c 的函数
+wpa_supplicant_ctrl_iface_process 来处里。
+这个process 函数处理的绝大数命令是 wpa_cli.c 里发出的命令。
+所以，这是通过 socket 的进程间通讯。
+\section{热点扫描}
+
+wpa_supplicant_req_scan 把 wpa_supplicant_scan 注册到 eloop。
+这是一个timeout 事件。
+
+wpa_supplicant_scan\label{scan} 里有两天路径
+
+1. 直接调用wpa_supplicant_event(wpa_s, EVENT_SCAN_RESULTS, NULL);
+
+2.	ret = wpa_drv_scan(wpa_s, ssid ? ssid->ssid : NULL,\\
+				   ssid ? ssid->ssid_len : 0); 
+这个对应到 wpa_driver_wext_scan，此函数会向 eloop 注册 wpa_driver_wext_scan_timeout
+, 这个超时回调也调用了wpa_supplicant_event(timeout_ctx, EVENT_SCAN_RESULTS, NULL);
+
+wpa_supplicant_event 会调用 wpa_supplicant_event_scan_results 处理扫描结果。
+ wpa_supplicant_event_scan_results 首先调用了 wpa_supplicant_get_scan_results
+后者调用wpa_drv_get_scan_results，这个是对 get_scan_results 方法的包装， 所以
+，会走到 wpa_driver_wext_get_scan_results。
+接着，调用 wpa_supplicant_associate.  
+然后，调用rsn_preauth_scan_results
+
+wpa_supplicant_req_scan
+被 wpa_supplicant_driver_init,
+wap_supplicant_timeout,
+wpa_supplicant_reloading_configuration,
+wap_supplicant_disassociate,
+wap_supplicant_deauthticate
+以及 wpa_supplicant_scan 调用。
+那么，最先调用的地方肯定是 wpa_supplicant_driver_init。
+
+wpa_supplicant_scan
+除了在 wpa_supplicant 调用外(即wpa_supplicant_req_scan 注册到eloop, 实际被
+eloop调用的)，还赋给struct wpa_sm_ctx 的 scan 指针给state machine 调用。
+
+wpa_supplicant_get_scan_results  还被 
+wpa_supplicant_ctrl_iface_scan_results , wpa_supplicant_get_beacon_ie调用。
+
+wpa_supplicant_ctrl_iface_init 在eloop 注册了 wpa_supplicant_ctrl_iface_receive，
+
+wpa_supplicant_ctrl_iface_receive 调用 wpa_supplicant_ctrl_iface_process ,
+process 再调用 wpa_supplicant_ctrl_iface_scan_results
+
+\section{关联热点}
+主要是 wpa_supplicant_associate , 是被 wpa_supplicant_event_scan_results 调用
+的，wpa_supplicant_scan 在 Android 的配置下不会被执行到的。
+        wpa_drv_set_auth_alg,
+        wpa_drv_set_drop_unencrypted(wpa_s, use_crypt);
+	wpa_supplicant_set_state(wpa_s, WPA_ASSOCIATING); 
+	ret = wpa_drv_associate(wpa_s, \&params);
+
+
+
+wpa_supplicant_set_suites
+
+关联热点还有两个函数 wpa_driver_wext_event_wireless, wpa_supplicant_gen_assoc_event
+
+wpa_driver_wext_init 向eloop 注册了套接字的回调，这个套接字就是s =
+socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);，
+而对应的回调函数就是wpa_driver_wext_event_receive。
+此回调函数会调用 wpa_driver_wext_event_rtm_newlink， 后者调用
+wpa_driver_wext_event_wireless 。
+
+wpa_supplicant_scan 调用 wpa_supplicant_gen_assoc_event。
+从关联角度我们重新再分析 wpa_supplicant_scan， 这个函数的行为跟配置文件很有关
+系。在 Android ,ap_scan 设为 1 。所以，上面热点扫描就没有讨论这两种情况，这里
+也不作过多讨论。
+
+\section{验证和加密}
+wpa_supplicant_req_auth_timeout  被调用的地方依次是\footnote{从日志上看，三个地方
+都执行了wpa_supplicant_req_auth_timeout}：
+wpa_supplicant_associate,
+wpa_supplicant_event_assoc， 
+wpa_supplicant_rx_eapol.
+wpa_supplicant_associate 别 wpa_supplicant_event_scan_results 调用，
+wpa_supplicant_rx_eapol 是在 l2_packet_receive 调用的， 因为 rx_callback 在
+l2_packet 初始化时被赋值为wpa_supplicant_rx_eapol 。
+l2_packet 出事化函数是 l2_packet_init, 她创建的套接字是用来获取原始的 L2 数据，见
+\autoref{sockraw} ,
+当然， 她关心的是 （即第三个参数protocol 的值）ETH_P_EAPOL (0x888e) 和 ETH_P_RSN_PREAUTH (0x88c7) 类型的数据包
+   前者在wpa_supplicant.c, 后者在 preauth.c 
+
+
+\section{关闭}
+
+\begin{lstlisting}
+wpa_driver_wext_deinit
+
+	wpa_driver_wext_set_bssid(drv, (u8 *) "\x00\x00\x00\x00\x00\x00");
+\end{lstlisting}
+
+
+\section{调试}
+'adb pull /proc/config.gz .'
+'gunzip config.gz'
+
+android wifi常用调试命令：
+1、ifconfig wlan0 up
+2、iwlist wlan0 scan
+3、iwconfig wlan0 essid karl key 0123456789
+
+common.h
+
+\begin{lstlisting}
+void android_printf(int level, char *format, ...);
+
+//when debug, replace MSG_INFO with MSG_DEBUG.
+#define wpa_printf(level, ...) \
+        do {                                            \
+            if ((level) >= MSG_INFO) {                  \
+                android_printf((level), __VA_ARGS__);   \
+            }                                           \
+        } while (0)
+
+#else /* ANDROID */
+\end{lstlisting}
+
+
+Android.mk 首先包括了：
+\begin{lstlisting}
+include $(LOCAL_PATH)/.config
+\end{lstlisting}
+
+在.config 配置了CONFIG_DRIVER_WEXT，
+但对CONFIG_L2_PACKET未作配置，那么使用CONFIG_L2_PACKET 默认值，其默认值是
+IEEE8021X_EAPOL 配置
+CONFIG_NO_WPA2 未配置
+
+
+
+\begin{lstlisting}
+ifndef CONFIG_L2_PACKET
+CONFIG_L2_PACKET=linux
+endif
+
+OBJS += l2_packet_$(CONFIG_L2_PACKET).c
+
+\end{lstlisting}
+L2 packet 是 l2_packet_linux.c
+
+wpa cli 的主程序是文件wpa_cli.c 。
+
+
+除了 wpa_cli 程序手工控制wpa_supplicant/wifi 
+
+android 中 wifi 的HAL 会调用 wpa_ctrl 使用的是 libnetutils
+libwpa_client 库， wpa_supplicant 编译了这个共享库。
+
+main.c 是 wpa_supplicant 主程序。
+wpa_supplicant.c 是主要初始化的。
+wpa.c 是 状态机， sm 即 State Machine。
+
+mlme.c 未编译，就是不使用。所以， wpa_supplicant 里的use_client_mlme 是为0.
+
+
+\section{动态主机配置协议服务}
+
+system/core/libnetutils/dhcp_utils.c
+
+external/dhcpcd
+
+
+frameworks/base/wifi/
+
+frameworks/base/core/java/android/net
+
+\section{Wifi 基本知识}
+
+Wireless Card: Should be self explanitory... handles sending/receiving wireless packets
+
+Linux Kernel: The linux kernel contains the driver for the wireless card, the
+mac80211 subsystem which handles packet generation and scheduling, and the
+nl80211 subsystem, which handles configuring the wireless interfaces for
+userspace
+
+libnl: libnl is the transport layer used to communicate with the kernel via netlink
+
+udev: udev is the facility the kernel uses to pass events/calls to crda
+
+iw: iw is a userspace utility that we can use to test that libnl is working
+correctly, as well as create additional virtual wireless interfaces on the
+wireless card
+
+crda: crda is a userspace program that the kernel queries (through udev) to
+find what channels/frequencies are usable, and at what powers. This moves the
+information out of static tables maintained in kernel to userspace, which
+allows them to be updated without reloading drivers/rebooting
+
+Wireless Regulatory Database: database of allowable frequencies and transmit
+power levels used by crda
+
+hostapd: This is the daemon that handles generation of beacons and other
+wireless packets, as wel as wpa-psk, wpa2, etc encryptions.
+
+无线网卡：操作接收/发达无线包
+
+linux核：linux核包涵了无线网卡的驱动，mac80211子系统 处理包的产生与时序安排。nl80211处理在用户空间配置无线接口  cfg80211 
+
+libnl:通过netlink与内核对话的传输层
+
+udev:udev是内核通过events/calls到 crda的设施
+
+iw:是我们用来测试 libnl是否正确工作，以及在无线网卡上创建额外的虚拟无线接口的用户空间工具 。
+
+crda:是内核通过udev来查找什么频段／频率是有效的，在什么强度的用户空间程序。这个从内
+核维护的静态表中移到用户空间，它可以不需要重载驱动和重启的情况下更新。
+
+无线控制数据库：crda使用允许的频率和传输强度等级的数据库
+
+hostapd:这是个用来操作信号的产生和其它无线包，以及wpa-psk, wpa2等加密的守护进程
+
+softMAC是一个用于描述无线网卡的类型的一个术语。
+
+
+\begin{tabular}{|p{0.3\textwidth}|p{0.6\textwidth}|}\hline
+Ad-hoc & 不需要 AP，各天线设备p2p（点对点）方式直接进行通讯。\\\hline
+Infra（Infrastructure） &通过接入点(AP) 实现各无线设备之间通信的方式。 \\\hline
+\end{tabular}
+
+
+\section{网络性能测量}
+Android 集成了工具 netperf，此工具包有两个应用：netperf 和 netserver，代码放在
+: external/netperf。
+
+Netperf是一种网络性能的测量工具，主要针对基于TCP或UDP的传输。Netperf根据应用的
+不同，可以进行不同模式的网络性能测试，即批量数据传输（bulk data transfer）模式
+和请求/应答（request/reponse）模式。Netperf测试结果所反映的是一个系统能够以多快
+的速度向另外一个系统发送数据，以及另外一个系统能够以多块的速度接收数据。
+
+Netperf工具以client/server方式工作。server端是netserver，用来侦听来自client端的
+连接，client端是netperf，用来向server发起网络测试。在client与server之间，首先
+建立一个控制连接，传递有关测试配置的信息，以及测试的结果；在控制连接建立并传递
+了测试配置信息以后，client与server之间会再建立一个测试连接，用来来回传递着特殊
+的流量模式，以测试网络的性能。
+
+
+\newpage
+
+\begin{appendices}
+    \section{linux sock_raw原始套接字编程}\label{sockraw}
+sock_raw原始套接字编程可以接收到本机网卡上的数据帧或者数据包,对与监听网络的流
+量和分析是很有作用的.一共可以有3种方式创建这种socket
+\begin{enumerate*}
+    \item socket(AF_INET, SOCK_RAW, IPPROTO_TCP|IPPROTO_UDP|IPPROTO_ICMP)
+        
+        发送接收ip数据包
+
+    \item socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))
+        
+        发送接收以太网数据帧, 注意第三个参数可以取ETH_P_IP, ETH_P_ARP,
+        ETH_P_ALL， 但是不能用或运算(|)连接
+
+    \item socket(AF_INET, SOCK_PACKET, htons(ETH_P_IP|ETH_P_ARP|ETH_P_ALL))
+        
+        过时了,不要用啊
+\end{enumerate*}
+
+理解一下SOCK_RAW的原理, 比如网卡收到了一个 14+20+8+100+4 的udp的以太网数据帧.
+
+首先,网卡对该数据帧进行硬过滤(根据网卡的模式不同会有不同的动作,如果设置了
+promisc混杂模式的话,则不做任何过滤直接交给下一层输入例程,否则非本机mac或者广播
+mac会被直接丢弃).按照上面的例子,如果成功的话,会进入ip输入例程.但是在进入ip输入
+例程之前,系统会检查系统中是否有通过socket(AF_PACKET, SOCK_RAW, ..)创建的套接字
+.如果有的话并且协议相符,在这个例子中就是需要ETH_P_IP或者ETH_P_ALL类型.系统就给
+每个这样的socket接收缓冲区发送一个数据帧拷贝.然后进入下一步.
+
+其次,进入了ip输入例程(ip层会对该数据包进行软过滤,就是检查校验或者丢弃非本机ip
+或者广播ip的数据包等,具体要参考源代码),例子中就是如果成功的话会进入udp输入例程
+.但是在交给udp输入例程之前,系统会检查系统中是否有通过socket(AF_INET, SOCK_RAW,
+..)创建的套接字.如果有的话并且协议相符,在这个例子中就是需要IPPROTO_UDP类型
+.系统就给每个这样的socket接收缓冲区发送一个数据帧拷贝.然后进入下一步.
+
+最后,进入udp输入例程 ...
+
+如果校验和出错的话,内核会直接丢弃该数据包的.而不会拷贝给sock_raw的套
+接字,因为校验和都出错了,数据肯定有问题的包括所有信息都没有意义了.
+
+进一步分析他们的能力.
+1. socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+
+该套接字可以接收协议类型为(tcp udp icmp等)发往本机的ip数据包,从上面看的就是20+8+100.
+
+\begin{itemize*}
+    \item 不能收到非发往本地ip的数据包(ip软过滤会丢弃这些不是发往本机ip的数据包).
+    \item 不能收到从本机发送出去的数据包.
+    \item 发送的话需要自己组织tcp udp icmp等头部.可以setsockopt来自己包装ip头部
+\end{itemize*}
+这种套接字用来写个ping程序比较适合
+     
+2. socket(PF_PACKET, SOCK_RAW, htons(x));
+
+这个套接字比较强大,创建这种套接字可以监听网卡上的所有数据帧.从上面看就是
+20+20+8+100.最后一个以太网crc从来都不算进来的,因为内核已经判断过了,对程序来说
+没有任何意义了.
+
+\begin{itemize*}
+    \item 能接收发往本地mac的数据帧
+    \item 能接收从本机发送出去的数据帧(第3个参数需要设置为ETH_P_ALL)
+    \item 能接收非发往本地mac的数据帧(网卡需要设置为promisc混杂模式)
+\end{itemize*}
+
+协议类型一共有四个 \marginpar{ linux/if_ether.h}
+
+\begin{tabular}{|p{0.15\textwidth}|p{0.1\textwidth}|p{0.6\textwidth}|}\hline
+ETH_P_IP  &  0x0800  & 只接收发往本机mac的ip类型的数据帧 \\\hline
+ETH_P_ARP &  0x0806  & 只接受发往本机mac的arp类型的数据帧\\\hline
+ETH_P_ARP &  0x8035 & 只接受发往本机mac的rarp类型的数据帧\\\hline
+ETH_P_ALL &  0x3    &  接收发往本机mac的所有类型ip arp rarp的数据帧, 接收从本机
+发出的所有类型的数据帧.(混杂模式打开的情况下,会接收到非发往本地mac的数据帧
+)\\\hline
+\end{tabular}
+
+发送的时候需要自己组织整个以太网数据帧.所有相关的地址使用struct sockaddr_ll 而
+不是struct sockaddr_in(因为协议簇是PF_PACKET不是AF_INET了),比如发送给某个机器,
+对方的地址需要使用struct sockaddr_ll。这种socket大小通吃,强悍。
+
+下面是一段相关的代码:
+\begin{lstlisting}[language=C,]
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <netpacket/packet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+.. .. ..
+int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+struct sockaddr_ll sll;
+memset( &sll, 0, sizeof(sll) );
+sll.sll_family = AF_PACKET;
+struct ifreq ifstruct;
+strcpy(ifstruct.ifr_name, "eth0");
+ioctl(sockfd, SIOCGIFINDEX, &ifstruct);
+sll.sll_ifindex = ifstruct.ifr_ifindex;
+sll.sll_protocol = htons(ETH_P_ALL);
+if(bind(fd, (struct sockaddr *) &sll, sizeof(sll)) == -1 ) {
+       perror("bind()");
+    ...
+int set_promisc(char *interface, int fd) {
+        struct ifreq ifr;
+        strcpy(ifr.ifr_name, interface);
+        if(ioctl(fd, SIOCGIFFLAGS, &ifr) == -1) {
+                 perror("iotcl()");
+                 return -1;
+        }
+        ifr.ifr_flags |= IFF_PROMISC;
+        if(ioctl(fd, SIOCSIFFLAGS, &ifr) == -1) {
+                 perror("iotcl()");
+                 return -1;
+         }
+         return 0;
+}
+
+int unset_promisc(char *interface, int fd) {
+        struct ifreq ifr;
+        strcpy(ifr.ifr_name, interface);
+        if(ioctl(fd, SIOCGIFFLAGS, &ifr) == -1) {
+                 perror("iotcl()");
+                 return -1;
+        }
+        ifr.ifr_flags &= ~IFF_PROMISC;
+        if(ioctl(fd, SIOCSIFFLAGS, &ifr) == -1) {
+                 perror("iotcl()");
+                 return -1;
+         }
+         return 0;
+}
+\end{lstlisting}
+3. socket(AF_INET, SOCK_PACKET, htons(ETH_P_ALL))这个最好不要用,反正我不用...
+总结使用方法:
+1.只想收到发往本机某种协议的ip数据包的话用第一种就足够了
+2. 更多的详细的内容请使用第二种.包括ETH_P_ALL参数和混杂模式都可以使它的能力不断的加强.
+ps:很多自己的想法.虚拟机测试环境.有错欢迎指出交流
+
+
+\section{Netlink 协议}
+\begin{tabular}{| p{0.12\textwidth} | p{0.28\textwidth} |p{0.5\textwidth} |}\hline
+   文件系统 & 路径 & 作用\\\hline
+procfs & /proc  & 主要用于揭示进程相关的信息.\\ \hline
+
+sysfs & /sys & 用于揭示 devices, drivers, buses 等信息; 严格遵循
+one-value-per-file 规则.\\\hline
+
+debugfs & /sys/kernel/debug/ & 没有任何规则要求, 用户可以放入任何信息; 主
+要用于调试目的. \\\hline
+
+\end{tabular}
+
+Netlink 相对于系统调用，ioctl 以及 /proc 文件系统而言具有以下优点：
+
+\begin{enumerate*} 
+    \item 为了使用 netlink，用户仅需要在 include/linux/netlink.h 中增加一个新
+        类型的 netlink 协议定义即可， 如 \#define NETLINK_MYTEST 17 然后，内核
+        和用户态应用就可以立即通过 socket API 使用该 netlink 协议类型进行数据
+        交换。但系统调用需要增加新的系统调用，ioctl 则需要增加设备或文件， 那
+        需要不少代码，proc 文件系统则需要在 /proc 下添加新的文件或目录，那将使
+        本来就混乱的 /proc 更加混乱。
+    \item  netlink是一种异步通信机制，在内核与用户态应用之间传递的消息
+        保存在socket缓存队列中，发送消息只是把消息保存在接收者的socket的接收队列，
+        而不需要等待接收者收到消息，但系统调用与 ioctl 则是同步通信机制，如果传递
+        的数据太长，将影响调度粒度。
+    \item 使用 netlink 的内核部分可以采用模块的方式实现，使用 netlink 的应用部分
+        和内核部分没有编译时依赖，但系统调用就有依赖，而且新的系统调用的实现必须
+        静态地连接到内核中，它无法在模块中实现，使用新系统调用的应用在编译时需要
+        依赖内核。
+
+    \item netlink 支持多播，内核模块或应用可以把消息多播给一个netlink组，属于该
+        netlink 组的任何内核模块或应用都能接收到该消息，内核事件向用户态的通知机
+        制就使用了这一特性，任何对内核事件感兴趣的应用都能收到该子系统发送的内核事件。
+
+    \item 内核可以使用 netlink 首先发起会话，但系统调用和 ioctl 只能由用户应用发起调用。
+
+    \item netlink 使用标准的 socket API，因此很容易使用，但系统调用和 ioctl则需要专门的培训才能使用。
+\end{enumerate*}
+
+DebugFS，顾名思义，是一种用于内核调试的虚拟文件系统，内核开发者通过debugfs和用
+户空间交换数据。类似的虚拟文件系统还有procfs和sysfs等，这几种虚拟文件系统都并
+不实际存储在硬盘上，而是Linux内核运行起来后才建立起来。
+
+通常情况下，最常用的内核调试手段是printk。但printk并不是所有情况都好用，比如打
+印的数据可能过多，我们真正关心的数据在大量的输出里不是那么一目了然；或者我们在
+调试时可能需要修改某些内核变量，这种情况下printk就无能为力，而如果为了修改某个
+值重新编译内核或者驱动又过于低效，此时就需要一个临时的文件系统可以把我们需要关
+心的数据映射到用户空间。在过去，procfs可以实现这个目的，到了2.6
+时代，新引入的sysfs也同样可以实现，但不论是procfs或是sysfs，用它们来实现某些
+debug的需求，似乎偏离了它们创建的本意。比如procfs，其目的是反映进程的状态信息
+；而sysfs主要用于Linux设备模型。不论是procfs或是sysfs的接口应该保持相对稳定，
+因为用户态程序很可能会依赖它们。当然，如果我们只是临时借用procfs或者sysfs来作
+debug之用，在代码发布之前将相关调试代码删除也无不可。但如果相关的调试借口要在
+相当长的一段时间内存在于内核之中，就不太适合放在procfs和sysfs里了。故此，
+debugfs应运而生。
+
+中断上下文， 进程上下文
+
+proc文件系统关注的是进程信息，/sysfs关注是one-value-per-file策略集，而Debugfs
+文件系统没有如此多限制，可是任何内核要输出的信息。
+
+mount -t debugfs none /sys/kernel/debug
+
+
+sysctl:
+he sysctl infrastructure is designed to configure kernel parameters at run
+time. The sysctl interface is heavily used by the Linux networking subsystem.
+It can be used to configure some core kernel parameters; represented as files
+in /proc/sys/*. The values can be accessed by using cat(1), echo(1) or the
+sysctl(8) commands. If a value is set by the echo command it only persists as
+long as the kernel is running, but gets lost as soon as the machine is
+rebooted. In order to change the values permanently they have to be written to
+the file /etc/sysctl.conf. Upon restarting the machine all values specified in
+this file are written to the corresponding files in /proc/sys/.
+
+\begin{lstlisting}[language=C, caption= NetLink 获取网卡信息]
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <asm/types.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
+#include <linux/netdevice.h>
+#include <net/if_arp.h>
+#include <netinet/ether.h>
+#include <netinet/if_ether.h>
+
+#if 1
+char * ether_ntoa_r (const struct ether_addr *addr, char *buf)
+{
+  sprintf (buf, "%x:%x:%x:%x:%x:%x",
+       addr->ether_addr_octet[0], addr->ether_addr_octet[1],
+       addr->ether_addr_octet[2], addr->ether_addr_octet[3],
+       addr->ether_addr_octet[4], addr->ether_addr_octet[5]);
+  return buf;
+}
+
+char * ether_ntoa (const struct ether_addr *addr)
+{
+  static char asc[18];
+
+  return ether_ntoa_r (addr, asc);
+}
+#endif
+
+int main()
+{
+    int nSocket, nAttrLen;
+    unsigned nLen;
+    char szBuffer[4096];
+    struct {
+        struct nlmsghdr nh;
+        struct ifinfomsg ifi;
+    }struReq;
+    struct sockaddr_nl struAddr;
+    struct nlmsghdr *pstruNL;
+    struct ifinfomsg *pstruIF;
+    struct rtattr *pstruAttr;
+    struct net_device_stats *pstruInfo;
+    struct ether_addr *pstruEther;
+
+    /*
+     * 创建一个PF_NETLINK的SOCKET,使用NETLINK_ROUTE协议
+     */
+    nSocket = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
+    if(nSocket < 0)
+    {
+        fprintf(stderr, "创建SOCKET错误:%s\n", strerror(errno));
+        return -1;
+    }
+
+    /*
+     * 绑定地址
+     */
+    memset(&struAddr, 0, sizeof(struAddr));
+    struAddr.nl_family = AF_NETLINK;
+    struAddr.nl_pid = getpid();
+    struAddr.nl_groups = 0;
+    if(bind(nSocket, (struct sockaddr *)&struAddr, sizeof(struAddr)) < 0)
+    {
+        fprintf(stderr, "绑定SOCKET错误:%s\n", strerror(errno));
+        return -1;
+    }
+
+    /*
+     * 发送一个请求
+     */
+    memset(&struReq, 0, sizeof(struReq));
+    struReq.nh.nlmsg_len = NLMSG_LENGTH(sizeof(struReq));
+    struReq.nh.nlmsg_type = RTM_GETLINK;
+    struReq.nh.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+    struReq.ifi.ifi_family = AF_UNSPEC;
+    memset(&struAddr, 0, sizeof(struAddr));
+    struAddr.nl_family = AF_NETLINK;
+    struAddr.nl_pid = 0;
+    struAddr.nl_groups = 0;
+    if(sendto(nSocket, &struReq, struReq.nh.nlmsg_len, 0,
+                (struct sockaddr *)&struAddr, sizeof(struAddr)) < 0)
+    {
+        fprintf(stderr, "发送数据错误:%s\n", strerror(errno));
+        return -1;
+    }
+
+    /*
+     * 循环接收数据，直到超时
+     */
+    alarm(3);
+    memset(szBuffer, 0, sizeof(szBuffer));
+    while((nLen = recv(nSocket, szBuffer, sizeof(szBuffer), 0)))
+    {
+        alarm(0);
+        pstruNL = (struct nlmsghdr *)szBuffer;
+        /*
+         * 判断是否继续有数据
+         */
+        while(NLMSG_OK(pstruNL, nLen))
+        {
+            /*
+             * 数据已经获取完成
+             */
+            if(pstruNL -> nlmsg_type == NLMSG_DONE)
+                break;
+            if(pstruNL -> nlmsg_type == NLMSG_ERROR)
+            {
+                /*
+                 * 发生一个错误
+                 */
+                struct nlmsgerr *pstruError;
+
+                pstruError = (struct nlmsgerr *)NLMSG_DATA(pstruNL);
+                fprintf(stderr, "发生错误[%s]\n",
+                        strerror(-pstruError -> error));
+                break;
+            }
+
+            /*
+             * 下面通过宏获取数据
+             */
+            pstruIF = NLMSG_DATA(pstruNL);
+            fprintf(stderr, "获取到设备[%d]信息\n", pstruIF -> ifi_index);
+            fprintf(stderr, "\t设备类型:");
+            switch(pstruIF -> ifi_type)
+            {
+                case ARPHRD_ETHER:
+                    fprintf(stderr, "以太网\n");
+                    break;
+                case ARPHRD_PPP:
+                    fprintf(stderr, "PPP拨号\n");
+                    break;
+                case ARPHRD_LOOPBACK:
+                    fprintf(stderr, "环路设备\n");
+                    break;
+                default:
+                    fprintf(stderr, "未知\n");
+                    break;
+            }
+            fprintf(stderr, "\t设备状态:");
+            if((pstruIF -> ifi_flags & IFF_UP )== IFF_UP)
+                fprintf(stderr, " UP");
+            if((pstruIF -> ifi_flags & IFF_BROADCAST) == IFF_BROADCAST)
+                fprintf(stderr, " BROADCAST");
+            if((pstruIF -> ifi_flags & IFF_DEBUG) == IFF_DEBUG)
+                fprintf(stderr, " DEBUG");
+            if((pstruIF -> ifi_flags & IFF_LOOPBACK) == IFF_LOOPBACK)
+                fprintf(stderr, " LOOPBACK");
+            if((pstruIF -> ifi_flags & IFF_POINTOPOINT) == IFF_POINTOPOINT)
+                fprintf(stderr, " POINTOPOINT");
+            if((pstruIF -> ifi_flags & IFF_RUNNING) == IFF_RUNNING)
+                fprintf(stderr, " RUNNING");
+            if((pstruIF -> ifi_flags & IFF_NOARP) == IFF_NOARP)
+                fprintf(stderr, " NOARP");
+            if((pstruIF -> ifi_flags & IFF_PROMISC) == IFF_PROMISC)
+                fprintf(stderr, " PROMISC");
+            if((pstruIF -> ifi_flags & IFF_NOTRAILERS) == IFF_NOTRAILERS)
+                fprintf(stderr, " NOTRAILERS");
+            if((pstruIF -> ifi_flags & IFF_ALLMULTI) == IFF_ALLMULTI)
+                fprintf(stderr, " ALLMULTI");
+            if((pstruIF -> ifi_flags & IFF_MASTER) == IFF_MASTER)
+                fprintf(stderr, " MASTER");
+            if((pstruIF -> ifi_flags & IFF_SLAVE) == IFF_SLAVE)
+                fprintf(stderr, " SLAVE");
+            if((pstruIF -> ifi_flags & IFF_MULTICAST) == IFF_MULTICAST)
+                fprintf(stderr, " MULTICAST");
+            if((pstruIF -> ifi_flags & IFF_PORTSEL) == IFF_PORTSEL)
+                fprintf(stderr, " SLAVE");
+            if((pstruIF -> ifi_flags & IFF_AUTOMEDIA) == IFF_AUTOMEDIA)
+                fprintf(stderr, " AUTOMEDIA");
+            if((pstruIF -> ifi_flags & IFF_DYNAMIC) == IFF_DYNAMIC)
+                fprintf(stderr, " DYNAMIC");
+            fprintf(stderr, "\n");
+
+            /*
+             * 下面通过宏获取属性
+             */
+            pstruAttr = IFLA_RTA(pstruIF);
+            nAttrLen = NLMSG_PAYLOAD(pstruNL, sizeof(struct ifinfomsg));
+            while(RTA_OK(pstruAttr, nAttrLen))
+            {
+                switch(pstruAttr->rta_type)
+                {
+                    case IFLA_IFNAME:
+                        fprintf(stderr, "\t设备名称:%s\n",
+                                (char *)RTA_DATA(pstruAttr));
+                        break;
+                    case IFLA_MTU:
+                        fprintf(stderr, "\t设备MTU:%d\n",
+                                *(unsigned int *)RTA_DATA(pstruAttr));
+                        break;
+                    case IFLA_QDISC:
+                        fprintf(stderr, "\t设备队列:%s\n",
+                                (char *)RTA_DATA(pstruAttr));
+                        break;
+                    case IFLA_ADDRESS:
+                        if(pstruIF -> ifi_type == ARPHRD_ETHER)
+                        {
+                            pstruEther = (struct ether_addr *)
+                                RTA_DATA(pstruAttr);
+                            fprintf(stderr, "\tMAC地址:%s\n",
+                                    ether_ntoa(pstruEther));
+                        }
+                        break;
+                    case IFLA_BROADCAST:
+                        if(pstruIF -> ifi_type == ARPHRD_ETHER)
+                        {
+                            pstruEther = (struct ether_addr *)
+                                RTA_DATA(pstruAttr);
+                            fprintf(stderr, "\t广播MAC地址:%s\n",
+                                    ether_ntoa(pstruEther));
+                        }
+                        break;
+                    case IFLA_STATS:
+                        pstruInfo = (struct net_device_stats *)
+                            RTA_DATA(pstruAttr);
+                        fprintf(stderr, "\t接收信息:\n");
+                        fprintf(stderr, "\t\t接收报文:%lu 字节:%lu\n",
+                                pstruInfo -> rx_packets, pstruInfo -> rx_bytes);
+                        fprintf(stderr, "\t\terrors:%lu dropped:%lu "
+                                "multicast:%lu collisions:%lu\n",
+                                pstruInfo -> rx_errors, pstruInfo -> rx_dropped,
+                                pstruInfo -> multicast, pstruInfo -> collisions);
+                        fprintf(stderr, "\t\tlength:%lu over:%lu crc:%lu "
+                                "frame:%lu fifo:%lu missed:%lu\n",
+                                pstruInfo -> rx_length_errors,
+                                pstruInfo -> rx_over_errors,
+                                pstruInfo -> rx_crc_errors,
+                                pstruInfo -> rx_frame_errors,
+                                pstruInfo -> rx_fifo_errors,
+                                pstruInfo -> rx_missed_errors);
+                        fprintf(stderr, "\t发送信息:\n");
+                        fprintf(stderr, "\t\t发送报文:%lu 字节:%lu\n",
+                                pstruInfo -> tx_packets, pstruInfo -> tx_bytes);
+                        fprintf(stderr, "\t\terrors:%lu dropped:%lu\n",
+                                pstruInfo -> tx_errors, pstruInfo -> tx_dropped);
+                        fprintf(stderr, "\t\taborted:%lu carrier:%lu fifo:%lu"
+                                " heartbeat:%lu window:%lu\n",
+                                pstruInfo -> tx_aborted_errors,
+                                pstruInfo -> tx_carrier_errors,
+                                pstruInfo -> tx_fifo_errors,
+                                pstruInfo -> tx_heartbeat_errors,
+                                pstruInfo -> tx_window_errors);
+                        break;
+                    default:
+                        break;
+
+                }
+                /*
+                 * 继续下一个属性
+                 */
+                pstruAttr = RTA_NEXT(pstruAttr, nAttrLen);
+            }
+            /*
+             * 继续下一个数据
+             */
+            pstruNL = NLMSG_NEXT(pstruNL, nLen);
+        }
+        memset(szBuffer, 0, sizeof(szBuffer));
+        alarm(3);
+    }
+    return 0;
+}
+\end{lstlisting}
+\end{appendices}
+
+
+\begin{thebibliography}{源文件清单}
+% 文档中新增交叉引用后,第一次执行 latex 或 pdflatex 编译命令时
+% 会得到类似下面的警告信息。因为第一次编译只会扫描出有交叉引用的地
+% 方,第二次编译才能得到正确结果。
+\bibitem { } frameworks/base/core/java/android/net/NetworkStateTracker.java   
+\bibitem { } frameworks/base/services/java/com/android/server/WifiService.java      
+\bibitem { } frameworks/base/wifi/java/android/net/wifi/WifiStateTracker.java
+\bibitem { } frameworks/base/wifi/java/android/net/wifi/WifiMonitor.java  
+\bibitem { } frameworks/base/wifi/java/android/net/wifi/WifiNative.java
+\bibitem { } \verb|frameworks/base/core/jni/android_net_wifi_Wifi.cpp| //WifiNative jni
+\bibitem { } frameworks/base/core/java/android/net/NetworkUtils.java //DHCP   
+\bibitem { } \verb|frameworks/base/core/jni/android_net_NetUtils.cpp| //NetworkUtils jni
+\bibitem { } \verb|system/core/libnetutils/dhcpclient.c|
+\bibitem { } \verb|system/core/libnetutils/dhcp_utils.c|
+\bibitem { } \verb|hardware/libhardware_legacy/wifi/wifi.c|
+\bibitem { } \verb|hardware/libhardware_legacy/include/libhardware_legacy/wifi.h|
+\bibitem { } \verb|external/wpa_supplicant/main.c|
+\bibitem { } \verb|external/wpa_supplicant/wpa.c|
+\bibitem { } \verb|external/wpa_supplicant/os_unix.c|
+\bibitem { } \verb|external/wpa_supplicant/drivers.c|
+\bibitem { } \verb|external/wpa_supplicant/driver_wext.c|
+\bibitem { } \verb|external/wpa_supplicant/wpa_supplicant.c|
+\bibitem { } \verb|external/wpa_supplicant/ctrl_iface_unix.c|
+\bibitem { } \verb|external/wpa_supplicant/ctrl_iface.c|
+\bibitem { } \verb|external/wpa_supplicant/events.c|
+\bibitem { } \verb|external/wpa_supplicant/eloop.c|
+\bibitem { }  external/wpa_supplicant   rc4.c sha1.c md5.c md4.c 
+    l2_package_linux.c preauth.c
+    tls_openssl.c pmksa_cache.c eap_psk.c eap_psk_common.c eap_sake.c
+    eap_sake_common.c eap_tls.c eap_tlv.c eap_ttls.c eap_pax.c
+\end{thebibliography}
+
+\end{document}%end fo document

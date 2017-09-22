@@ -1,0 +1,302 @@
+\documentclass[a4paper,10pt,twoside]{article}% a4paper - A4纸 11pt -字体 twoside -双面 openany -新章节可在偶数页开始
+%\usepackage{CJKutf8}%Chinese layout
+\usepackage{xeCJK}
+\setCJKmainfont{AR PL UKai CN}
+\setCJKmonofont{AR PL UKai CN}
+%\setCJKfamilyfont{AR PL UKai CN}{kai}
+\setmainfont{DejaVu Sans}
+\usepackage{underscore}
+\pagestyle{empty} %不显示页码
+%\input{pagegeometry}%自定义的文件，设置页面参数
+%\usepackage{amsmath,amsthm,amsfonts,amssymb,bm} % 数学宏包
+%\usepackage{graphicx,psfrag}                    % 图形宏包
+\usepackage{makeidx}                            % 建立索引宏包
+\usepackage{verbatim}
+\usepackage{comment}
+\usepackage{listings}%源代码宏包,such as C/C++ code
+\usepackage{xcolor}
+\lstset{language=C++}%这条命令可以让LaTeX排版时将C++键字突出显示
+\lstset{breaklines}%这条命令可以让LaTeX自动将长的代码行换行排版
+\lstset{extendedchars=false}%这一条命令可以解决代码跨页时，章节标题，页眉等汉字不显示的问题
+\lstset{numbers=left,basicstyle=\small,
+numberstyle=\tiny,
+keywordstyle=\small\color{blue!70}, 
+commentstyle=\color{red!50!green!50!blue!50},
+frame=shadowbox,
+rulesepcolor=\color{red!20!green!20!blue!20}
+} 
+\lstset{language=C,
+    breaklines=true,
+    extendedchars=false,
+    breakautoindent=true,
+    breakindent=10pt,
+    numbers=left, 
+    basicstyle=\tiny,%\scriptsize,
+    numberstyle=\tiny,
+    keywordstyle=\tiny\color{blue!70}, 
+    commentstyle=\color{red!50!green!50!blue!50},
+    escapeinside={(*@}{@*)}, 
+  %  columns=cfixed,
+    resetmargins=true 
+    %  frame=shadowbox,
+    %  rulesepcolor=\color{red!20!green!20!blue!20}
+}
+%\usepackage[CJKbookmarks=true,unicode=true
+%bookmarksnumbered=true,
+%bookmarksopen=true,
+%colorlinks=true,%
+%pdfborder=001,
+%citecolor=magenta,
+%linkcolor=blue,
+%linktocpage=true]{hyperref}%超链接, 以及书签
+\usepackage[CJKbookmarks=true, bookmarksnumbered=true,
+colorlinks=true,% frenchlinks=true, raiselinks=true, xetex,, linktocpage=true 
+citecolor=magenta, linkcolor=blue]{hyperref}
+
+\setlength{\parskip}{6pt}
+
+
+\title{Android MultiMedia}
+\author{shecenon@gmail.com}
+%\makeindex
+\begin{document}
+%\begin{CJK}{UTF8}{song}
+%\rmfamily
+%\sffamily
+\ttfamily
+\maketitle
+% 目录， 标题出现中文，请把.toc中的出错信息删除，或者在标题没有
+% 中文时生成.toc文件，然后再在标题中加入中文, 之后就不会出现乱码的错误， 或者在
+% 文档的末尾加上\newpage(网上的方法，未经证实)
+% 而且要编译两次，甚至三次。
+\tableofcontents
+\printindex
+\newpage
+\newcommand{\invoke}[1]{\\ -\textgreater\hspace{#1}}
+
+
+\part{媒体库}
+\section{媒体扫描}
+MediaScanner可以通过手动控制，在ANDROID系统中，已经定制了三种事件会触发
+MediaScanner去扫描磁盘文件：\newline
+ACTION_BOOT_COMPLETED、ACTION_MEDIA_MOUNTED、 ACTION_MEDIA_SCANNER_SCAN_FILE。
+
+其中ACTION_BOOT_COMPLETED是系统启动完后发出这个消息，ACTION_MEDIA_MOUNTED是插
+卡事件触发的消息，ACTION_MEDIA_SCANNER_SCAN_FILE消息一般是在一些文件操作后，开
+发人员手动发出的一个重新扫描多媒体文件的消息。发送消息通过sendBroadcast函数完
+成，比如广播一个ACTION_MEDIA_MOUNTED消息：
+
+\begin{lstlisting}
+sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED, Uri.parse("file://"
+
+                       + Environment.getExternalStorageDirectory())));
+
+                   \end{lstlisting}
+
+
+frameworks/base/media/java/android/media/MediaScanner.java
+
+packages/providers/MediaProvider/src/com/android/providers/media/MediaScannerService.java
+
+frameworks/base/services/java/com/android/server/MountService.java
+notifyVolumeStateChange
+
+
+frameworks/base/core/java/android/os/Environment.java
+
+frameworks/base/core/java/android/os/storage/IMountService.java
+
+frameworks/base/core/java/android/os/storage/StorageManager.java
+
+frameworks/base/core/java/android/os/storage/IMountService.java
+
+\part{Android Camera Recording}
+\section{源码}
+% 文档中新增交叉引用后,第一次执行 latex 或 pdflatex 编译命令时
+% 会得到类似下面的警告信息。因为第一次编译只会扫描出有交叉引用的地
+% 方,第二次编译才能得到正确结果。
+\begin{enumerate} 
+\setlength{\parskip}{-1pt}
+\setlength{\itemsep}{3pt}
+\setlength{\parsep}{0ex}
+\renewcommand{\labelenumi}{(\theenumi)}
+\item \verb|device/samsung/sec_mm/sec_omx/sec_omx_component/video/enc/h264enc/SEC_OMX_H264enc.c|
+\item \verb|device/samsung/sec_mm/sec_omx/sec_osal/SEC_OSAL_Log.h|
+\item device/sibrary/proprietary/libcamera/SecCamera.cpp
+\item device/sibrary/proprietary/libcamera/SecCamera.h
+\item \label{sechw}device/sibrary/proprietary/libcamera/SecCameraHWInterface.cpp  
+\item frameworks/base/media/libmedia/IMediaRecorder.cpp  
+\item frameworks/base/media/libmedia/MediaProfiles.cpp   
+\item frameworks/base/media/libmedia/mediarecorder.cpp   
+\item frameworks/base/media/jni/android\_media\_MediaProfiles.cpp 
+\item frameworks/base/media/jni/android\_media\_MediaRecorder.cpp 
+\item \label{camsrc}frameworks/base/media/libstagefright/CameraSource.cpp
+\item frameworks/base/media/libstagefright/OMXCodec.cpp
+\item frameworks/base/media/libstagefright/OMXCodec.cpp
+\item frameworks/base/media/libstagefright/MPEG4Writer.cpp
+\item frameworks/base/media/libmediaplayerservice/MediaRecorderClient.cpp  
+\item frameworks/base/media/libmediaplayerservice/StagefrightRecorder.cpp  
+\item frameworks/base/services/camera/libcameraservice/CameraService.cpp
+\item frameworks/base/libs/camera/Camera.cpp             
+\item frameworks/base/libs/camera/ICameraClient.cpp      
+\item frameworks/base/core/jni/android\_hardware\_Camera.cpp      
+\end{enumerate}
+
+\section{Data callback}
+\subsection{previewThread thread}
+previewThread is the origin region of the recording data callback.
+%\begin{lstlisting}[language=C] \end{lstlisting}
+\begin{flushleft}
+\ref{sechw} SecCameraHWInterface mDataCbTimestamp 
+\invoke{10pt} CameraService::Client::dataCallbackTimestamp
+\invoke{20pt} handleGenericDataTimestamp
+\invoke{30pt} ICameraClient::dataCallbackTimestamp
+\invoke{40pt} Through Binder execute : Camera.cpp dataCallbackTimestamp
+\invoke{50pt} \ref{camsrc} CameraSource postDataTimestamp
+\end{flushleft}
+
+\section{Codecs}
+\index{}
+\newcommand{\setupVideoEncoder}{setupVideoEncoder()}
+\newcommand{\startRecording}{startMPEG4Recording()}
+\newcommand{\codeccreate}{ OMXCodec::Create()}
+%{~调用~\\\t}%{\Longrightarrow}  will result in "! Missing $ inserted.", because it appear math mode
+StagefrightRecorder 模块初始化流程
+\begin{flushleft}
+    start() \invoke{10pt} \startRecording \invoke{20pt} \setupVideoEncoder
+    \invoke{30pt}
+\codeccreate
+\end{flushleft}
+  \setupVideoEncoder 创建了CameraSource \footnote{CameraSource 是 MediaSource 派
+  生类}对象并把它传递给\codeccreate,后者把此对象赋值给数据成员
+  mSource。\setupVideoEncoder 也把创建的CameraSource对象返回给\startRecording
+  ，后者把对象传给MPEG4Writer。
+  
+ \begin{lstlisting}[language=C] 
+\end{lstlisting}
+
+
+
+\subsection{sec Init}
+    \begin{enumerate} 
+\setlength{\parskip}{-1pt}
+\item \verb|device/samsung/sec_mm/sec_omx/sec_omx_component/common/SEC_OMX_Basecomponent.c|
+\item \verb|device/samsung/proprietary/libstagefrighthw/SEC_OMX_Plugin.cpp|
+\end{enumerate}
+
+\begin{flushleft}
+\verb|SEC_OMX_Plugin.cpp SECOMXPlugin::SECOMXPlugin()|
+\invoke{10pt}\verb|SEC_OMX_Core.c SEC_OMX_GetHandle|
+\invoke{20pt}\verb|SEC_OMX_Component_Register.c SEC_OMX_ComponentLoad|
+\invoke{30pt}\verb| SEC_OMX_H264enc.c SEC_OMX_ComponentInit |
+\invoke{40pt}\verb| SEC_OMX_Venc.c SEC_OMX_VideoEncodeComponentinit |
+\invoke{50pt}\verb| SEC_OMX_Basecomponent.c SEC_OMX_BaseComponent_Constructor,|
+             \verb| SEC_OMX_Port_Constructor,|
+             \verb| SEC_OSAL_Malloc(sizeof(SEC_OMX_VIDEOENC_COMPONENT));|
+\end{flushleft}
+\begin{verbatim}
+SEC_OMX_ComponentInit 是真正初始化的地方，上面的只是加载so库的工作。
+SEC_OSAL_dlsym 加载库并找到 SEC_OMX_ComponentInit 函数
+SEC_OMX_ComponentLoad的一些工作：
+    pOMXComponent = (OMX_COMPONENTTYPE *)SEC_OSAL_Malloc(sizeof(OMX_COMPONENTTYPE));
+    INIT_SET_SIZE_VERSION(pOMXComponent, OMX_COMPONENTTYPE);
+    ret = (*SEC_OMX_ComponentInit)((OMX_HANDLETYPE)pOMXComponent, sec_component->componentName);
+
+
+SEC_OMX_Init 只是注册编解码so。
+
+SEC_MFC_H264Enc_Init 调用SsbSipMfcEncInit
+\end{verbatim}
+
+\begin{lstlisting}
+OSCL_EXPORT_REF OMX_ERRORTYPE SEC_OMX_ComponentInit(OMX_HANDLETYPE hComponent, OMX_STRING componentName)
+{
+    pOMXComponent = (OMX_COMPONENTTYPE *)hComponent;
+    ret = SEC_OMX_VideoEncodeComponentInit(pOMXComponent);
+    .. .. ..
+    pSECComponent->sec_mfc_componentInit      = &SEC_MFC_H264Enc_Init; // Init MFC
+    pSECComponent->sec_mfc_componentTerminate = &SEC_MFC_H264Enc_Terminate;
+    pSECComponent->sec_mfc_bufferProcess      = &SEC_MFC_H264Enc_bufferProcess;
+    pSECComponent->sec_checkInputFrame        = NULL;
+    .. .. ..
+}
+\end{lstlisting}
+\begin{lstlisting}
+
+SEC_OMX_Basecomponent.c
+OMX_ERRORTYPE SEC_OMX_ComponentStateSet(OMX_COMPONENTTYPE *pOMXComponent, OMX_U32 messageParam)
+{
+    .. .. ..
+    OMX_STATETYPE          destState = messageParam;
+    .. .. .. 
+    switch (destState) {
+    .. .. .. 
+    case OMX_StateIdle:
+        switch (currentState) {
+        case OMX_StateLoaded:
+            for (i = 0; i < pSECComponent->portParam.nPorts; i++) {
+                pSECPort = (pSECComponent->pSECPort + i);
+                if (CHECK_PORT_TUNNELED(pSECPort) && CHECK_PORT_BUFFER_SUPPLIER(pSECPort)) {
+                    if (CHECK_PORT_ENABLED(pSECPort)) {
+                        ret = pSECComponent->sec_AllocateTunnelBuffer(pSECPort, i);
+                        if (ret!=OMX_ErrorNone)
+                            goto EXIT;
+                    }
+                } else {
+                    if (CHECK_PORT_ENABLED(pSECPort)) {
+                        SEC_OSAL_SemaphoreWait(pSECComponent->pSECPort[i].loadedResource);
+                        pSECPort->portDefinition.bPopulated = OMX_TRUE;
+                    }
+                }
+            }
+            ret = pSECComponent->sec_mfc_componentInit(pOMXComponent);
+            .. .. ..
+        }
+        .. .. ..
+    }
+    .. .. ..
+}
+\end{lstlisting}
+\subsection{I do}
+\begin{itemize}
+    \item
+\begin{lstlisting}
+SecCamera fimc_v4l2_dqbuf
+int SecCamera::getRecordFrame(void)
+{
+    int index;
+    if (m_flag_record_start == 0) {
+        LOGE("%s: m_flag_record_start is 0", __func__);
+        return -1;
+    }
+#ifdef  use_fimc2_rec	
+    previewPoll(false);
+    index=fimc_v4l2_dqbuf(m_cam_fd2);
+    if (0 > index || index >= MAX_BUFFERS) {
+        LOGE("ERR(%s):wrong index = %d\n", __func__, index);
+        return -1;
+    }
+    fimc_v4l2_qbuf(m_cam_fd2, index);//add by xusl
+    return   index;
+#else
+#endif
+}
+\end{lstlisting}
+\item so consistence device.mk libstagefrighthw.so 
+    \end{itemize}
+
+% 
+% 抄录环境(verbatim)在\begin{verbatim}和\end{verbatim} 的任何字符都将原样输出, 包括\等TeX保留字. 
+%而"verbatim*"与verbatim的区别是, 它将把空格用|_|表示出来. verbatim有一个简写形式, 
+%"\verb标识符 字符串 标识符", 其中标识符可以是空格以外任何字符, 它与\verb之间没有空格.
+\begin{verbatim}
+
+\end{verbatim}
+
+%in case of use '\\', if complain that" Underfull \hbox (badness 10000) in paragraph at lines"
+%pls check the last '\\' follow a empty line or just like command \end{CJK}
+which app to handle file.\\\indent\~{}/.local/share/applications/mimeapps.list  \\
+how to enable auto login gconf-editor apps gdm simple-greater disable\_user\_list
+%\end{CJK}
+\newpage
+\end{document}%end fo document

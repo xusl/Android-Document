@@ -1,0 +1,1646 @@
+\documentclass[a4paper,11pt]{book}
+%\usepackage{tocvsec2}
+%\usepackage{titletoc}
+\usepackage{enumitem}%let description environment new line description content
+\usepackage{ifthen}
+\usepackage{verbatim}
+\usepackage{multicol}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{underscore}%正文使用_
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\usepackage{makeidx}%索引
+\usepackage[iso]{isodateo}%控制\today的格式
+\usepackage{tikz}
+\usetikzlibrary{patterns}
+\usepackage{graphics}
+\usepackage{mdwlist}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{language=perl,
+    breaklines=true,
+    breakautoindent=true,
+    breakindent=10pt,
+    numbers=left, 
+    basicstyle=\scriptsize,
+    numberstyle=\tiny,
+    keywordstyle=\scriptsize\color{blue!70}, 
+    commentstyle=\color{red!50!green!50!blue!50},
+  %  frame=shadowbox,
+  %  rulesepcolor=\color{red!20!green!20!blue!20}
+}
+\lstdefinelanguage{KC}{language={C},morekeywords={uint32_t, size_t}}
+\usepackage[CJKbookmarks=true, bookmarksnumbered=true,
+colorlinks=true,% frenchlinks=true, raiselinks=true, xetex,, linktocpage=true 
+citecolor=magenta, linkcolor=blue]{hyperref}
+%\hypersetup{CJKbookmarks=true}
+%\usepackage[CJKbookmarks=true, bookmarksnumbered=true,
+%colorlinks=false, citecolor=magenta]{hyperref}
+\usepackage{xeCJK}
+\setCJKmainfont{AR PL UKai CN}
+\setCJKmonofont{AR PL UKai CN}
+%\setCJKfamilyfont{AR PL UKai CN}{kai}
+\setmainfont{DejaVu Sans}
+\title{编程语言学习}
+\author{Leo shecenon@gmail.com}
+\date{\today}
+
+\makeindex 
+
+\begin{document}
+\maketitle
+%\renewcommand{\refname}{参考文献}
+\renewcommand\contentsname{目录}
+\renewcommand\listfigurename{插图目录}
+\renewcommand\listtablename{表格目录}
+\renewcommand\indexname{索引}
+\renewcommand\appendixname{附录}
+\renewcommand\figurename{图}
+\renewcommand\tablename{表}
+\renewcommand{\lstlistlistingname}{代码列表集}
+\renewcommand{\lstlistingname}{代码}
+
+\setdescription{labelsep=\textwidth}
+%\setlength{\multicolsep}{3pt} 
+%\multicolsep=\skip59
+\setlength{\columnsep}{.8cm}
+%\titlecontents{section}[1.5em]{}{\thecontentslabel}{}{\dotfill \contentspage}
+%\titlecontents{section}[1.5em]{\color{blue}\normalsize\addvspace{1.0ex}}{\contentslabel{2em}\hspace∗{−0.0em}}{\hspace∗{−3.3em}}{\color{black}\titlerule ∗[0.8pc]{}\contentspage}
+\setlength{\parskip}{1ex}
+\headheight13.6pt
+\tableofcontents
+\newcommand{\various}[1]{{\color{cyan}\textit{#1}}}
+\newcommand{\binder}{{\color{red}binder }}
+
+\setlength{\leftmargin}{1.2em}     %左边界
+\setlength{\parsep}{0ex}         %段落间距
+\setlength{\topsep}{1ex}         %列表到上下文的垂直距离
+\setlength{\itemsep}{0.5ex}        %条目间距
+\setlength{\labelsep}{0.3em}     %标号和列表项之间的距离,默认0.5em
+\setlength{\itemindent}{1.1em}    %标签缩进量
+\setlength{\listparindent}{0em} %段落缩进量
+
+\printindex
+
+\chapter{C}
+Linux缩写的一个规范就是把单词中间的元音字母去掉，例如：temp=〉tmp， 
+user=〉usr，而etc等缩写。
+
+\section{新的C语言：一切都源于FORTRAN}
+此篇文章摘取于即将登载于《Dr.Dobb's 软件研发》第三期（2003年10月）的《The New
+C:一切源于FORTRAN》，文章主要是介绍了C99的新特性受限指针，在得到作者Randy
+Meyers以及《Dr.Dobb's 软件研发》杂志负责人刘江先生的应允下，把全文的前面的一部
+分作为文档发表，希望能对大家有所帮助。
+
+新的C语言：一切都源于FORTRAN
+
+译注：本文是作者Randy Meyers在 CUJ杂志开的一个专题系列The New
+C的第二篇文章，主要是叙说C99中的新关键字restrict以及受限指针（restricted
+pointers）的历史渊源和使用方式。受限指针作为一种编译器优化代码的方式，是由编译
+器厂商提供特定的实现，因此这篇文章所谈论的并非在一切实现中都能得到支持，至于如
+何使用restrict关键字，这篇文章做了很好的说明，期望本文能给关心C语言和使用C语言
+的用户带来帮助。在翻译上，所有译者在翻译过程中有疑惑的术语或者其他一切都以括号
+形式把原文直接给出，诚心不想给读者半点误导，但是否如愿还需读者的评判，关于本文
+的一切可以用[email]amstrongest@hotmail.com[/email]与译者联系和讨论。
+
+有时候改进一种语言的最好方式就是让它和三十年前的古老样子更相似
+
+一切都源于FORTRAN（It all began with FORTRAN）。
+
+谈起上面的话，我并不是想说FORTRAN是第一个程序设计语言，但是在上个世纪六十年代
+（1960s）的一场关于如何在FORTRAN中实现参数传递的争论，却意外的使FORTRAN在七十
+年代（1970s）的超级计算机上面的性能有了巨大的提升，并且导致了九十年代（1990s）
+一个关于C语言的新特征被C99所接受，这就是受限指针（restricted
+pointers）。而理解受限指针的原始动机的最好方式就是回顾历史，重温发生在FORTRAN
+中的那个由争论所导致的意外。
+
+和C不一样的是，在FORTRAN中如果一个函数被分配了一个新值作为参数，传递给函数的实
+参值将会改变，并且在函数返回时，调用者将会得到新的参数值。考虑下面Example
+1所例举的代码，如果你以Y作为参数调用F，在F返回时，Y值将会是6。[译注：下面的程
+序没有出现变量Y，文中意思是Y是实参数，而下面程序出现的X是形参数，只是属于函数F
+的内部变量，但是当把Y复制给X后，并且改变X同时将改变外面调用的Y的值]
+
+\begin{lstlisting}[language=c, caption='Example 1']
+SUBROUTINE F(X)
+INTEGER X
+X = 6
+END
+\end{lstlisting}
+这样的参数传递方式就使争论随之而来。不同的FORTRAN编译器可以选择两种实现方式中
+的一种来获得FORTRAN中的参数传递语义。第一种方式是引用参数传递（by
+reference），也就是典型的C程序员所使用的：写一个函数，并且在它的调用者中修改变
+量。（write a function that modifies a variable in its
+caller）。传递给函数的是一个参数的地址，并且在需要的时候任何地方都可以间接访问
+这个参数。如果FORTRAN编译器产生C代码的话，就会和下面Example 2.的C代码类似。
+
+\begin{lstlisting}[language=c, caption='Example 2:']
+void f(int *x) {
+   *x = 6;
+}
+\end{lstlisting}
+
+然而，对于一些类型的计算机来说，间接访问局部变量比直接引用访问所带来的运行时开
+销要大的多。这也就导致了FORTRAN中参数传递的第二种实现方式。实参的地址依然会被
+传递给函数，但是函数一旦被调用，就将生成一个实参数的局部拷贝[译注：传递的是地
+址，但是函数内部拷贝的却是参数值]，在函数生存期中将一直使用这个拷贝的局部变量
+，当函数返回时，将把拷贝变量赋值给调用函数的参数变量。这样的FORTRAN编译器如果
+产生C代码将会和下面的Example 3相类似。进/出拷贝（copy in/copy
+out）参数传递方式增加了函数进入和返回时的负担，但是如果一个参数被多次引用，而
+间接引用（在一些机器上代价十分昂贵）却不再使用的话，导致的结果就是性能的提升（
+在一些机器上面而言）。[译注：就是说第一种方式的主要的调用开销是间接引用，第二
+种方式的主要调用开销是拷贝变量，其中哪种更好，需要根据真实代码的情况衡量决定]
+。
+\begin{lstlisting}[language=c,caption='Example 3:']
+void f(int *x) {
+   int xcopy = *x;
+   xcopy = 6;
+   *x = xcopy;
+}
+\end{lstlisting}
+
+大多数时候，编译器如何实现语言特征通常都被认为不过只是“实现细节”。它们不会影响
+程序员编写程序的方式，而语言的标准委员会允许语言的实现者自由选择和改变实现方式
+。然而，根据使用的参数传递机制，FORTRAN程序会产生不同的结果。考虑下面Example 4
+中的FORTRAN代码，以及以两种方式转换成的C代码：
+
+\begin{lstlisting}[language=c, caption='Example 4:']
+SUBROUTINE G(X, Y)
+INTEGER X, Y
+X = 1 + X
+Y = 5 + Y
+END
+
+// Translation using "by reference"
+void g(int *x, int *y) {
+   *x = 1 + *x;
+   *y = 5 + *y;
+}
+
+// Translation using
+// "copy in/copy out"
+void g(int *x, int *y) {
+   int xcopy = *x;
+   int ycopy = *y;
+   xcopy = 1 + xcopy;
+   ycopy = 5 + ycopy;
+   *x = xcopy;
+   *y = ycopy;
+}
+\end{lstlisting}
+G函数给它的参数加上了不同的常量，如果你把参数A和B传递给函数G，并且在调用前A的
+值是1，B的值是10。不用怀疑，无论使用FORTRAN中的那种函数参数传递机制，当函数返
+回时A的值将变成2而B的值将变成15。但是请考虑，如果你传递参数都是的A（并且被初始
+化为1），将会是什么情况？如果是使用引用调用（by reference）的参数传递机制，在
+函数返回时A将的值将变成7。A的值在赋值给*x的过程中时候被更新，因为x和y都指向A，
+所以在随后的对*y赋值的过程中A的值将再次被改写。相反，如果是使用进/出拷贝（copy
+in/copy out）的参数传递机制，在函数返回时，A的值将是6。调用发生后，在函数G中将不同的拷
+贝变量，并且每一个都将在函数返回时赋值给A，但最后的一个拷贝变量的返回值才会成
+为A的终值。
+
+这两种不同的参数传递机制是任何程序设计语言定义者所必须面对的不一致性的代表。语
+言需要特殊的实现实现技术吗？也许这将会以付出效率为代价？语言的特性是否应该为了
+避免争议而改变？FORTRAN的定义者因为效率而允许同时存在两种参数传递机制。而一旦
+这样的决定做了出来，某种类型的程序就变的不一致了，并将导致无法定义的结果（
+outlawed）。
+
+FORTRAN 66
+标准包含了一系列可能会误导程序员的规则。在函数参数列表中，对于任何变量你都只能
+传递一次。如果你传递了一个变量作为函数参数，那么这个函数就不能再在全局上引用这
+个变量(FORTRAN COMMON)。如果你传递给一个变量给函数，你就不能再传递任何东西，并
+且这个函数也不能再引用任何东西，that overlaps it in storage (FORTRAN
+EQUIVALENCE)。在这样的规则下，没有什么程序可以确定应该采用何种参数传递机制。
+
+大约十年以后[译注：意指1970s]，为了实现超级计算机Cray 1的高性能，超级计算机需
+要高优化的编译器来使传统的程序能够使用机器的向量寄存器（vector registers）。
+考虑Example 5中的程序。其中对于函数来说最有效率的代码就是先后把数组指针x，y载入到向量寄存
+器中然后执行向量加指令来把两个向量寄存器中的变量加在一起。如果编译器以产生向量
+指令的方式来取代传统的使用循环来访问数组中的每一个元素的方式，那么代码的运行效
+率将得到巨大的提升。
+\begin{lstlisting}[language=c, caption='Example 5:']
+void vector_add(float *x, float *y, float *result) {
+   int i;
+   for (i = 0; i < 64; ++i)
+      result[i] = x[i] + y[i];
+}
+\end{lstlisting}
+编译器中的优化器肯定会把循环转化成一系列的向量指令，但是问题在于那些向量指令是
+否真的whether the sequence of vector instructions is really equivalent to the
+original loop。你能在处理result数组的存储工作之前就把x,y数组载入到向量寄存器中
+，只因为你清楚result数组和x,y数组都是不同的个体。考虑如果result指向x[1]，将会
+发生什么？在这种情况下result[0]其实就是x[1]，同样result[I]其实就是x[I+1],
+每一次循环迭代过程中都会存储下一次的迭代中会被引用的变量。如果在做result的存储
+工作之前就把x载入到向量寄存器中去，变量值将会改变calculated
+change。正是在这一点上，FORTRAN的定义就带来了冲突。为了避免在传递机制中需要引
+入一个特殊的参数，FORTRAN标准定义了一系列精确的规则用来允许向量化编译器（
+vectorizing compiler）假设x,y和result都是互不相关的，non-overlapping arrays。
+就这样偶然的，FORTRAN在向量机上就有了巨大的性能优势。
+
+
+看看TI的帮助：   
+To help the compiler determine memory dependencies, you can qualify a pointer,
+reference, or array with the restrict keyword. The restrict keyword is a type
+qualifier that may be applied to pointers, references, and arrays. Its use
+represents a guarantee by the programmer that within the scope of the pointer
+declaration the object pointed to can be accessed only by that pointer. Any
+violation of this guarantee renders the program undefined. This practice helps
+the compiler optimize certain sections of code because aliasing information
+can be more easily determined. 
+
+In the example that follows, the restrict keyword is used to tell the compiler
+that the function func1 is never called with the pointers a and b pointing to
+objects that overlap in memory. You are promising that accesses through a and
+b will never conflict; this means that a write through one pointer cannot
+affect a read from any other pointer. The precise semantics of the restrict
+keyword are described in the 1999 version of the ISO C standard. 
+Use of the restrict type qualifier with pointers 
+
+\begin{lstlisting}[language=c]
+void func1(int * restrict a, int * restrict b) { 
+/* func1's code here */ 
+} 
+
+This example illustrates using the restrict keyword when passing arrays to a
+function. Here, the arrays c and d should not overlap, nor should c and d
+point to the same array.  Use of the restrict type qualifier with arrays 
+
+\begin{lstlisting}[language=c]
+void func2(int c[restrict], int d[restrict]) { 
+    int i;
+    for(i = 0; i < 64; i++) { 
+        c[i] += d[i]; 
+        d[i] += 1; 
+    } 
+}
+\end{lstlisting}
+
+C语言的5种存储类以及关键字volatile、restrict 
+    《C Primer Plus》读到12章，我的C语言复习进展的挺不错。这一章介绍存储类、连
+接和内存管理，可以说是重中之重。
+C的5种存储类：
+自动——在一个代码块内（或在一个函数头部作为参量）声明的变量，无论有没有存储类修
+饰符auton，都属于自动存储类。该类具有自动存储时期、代码块的作用域和空链接(no
+linkage),如未初始化，它的值是不确定的（java要求局部变量必须初始化）
+
+寄存器——在一个代码块内（或在一个函数头部作为参量）使用修饰符register声明的变量
+属于寄存器存储类。该类与自动存储类相似，具有自动存储时期、代码块作用域和空连接
+，声明为register仅仅是一个请求，而非命令，因此变量仍然可能是普通的自动变量，但
+是仍然无法获取地址。。如果没有被初始化，它的值也是未定的。
+
+静态、空链接——在一个代码块内使用存储类修饰符static声明的局部变量属于静态空连接
+存储类。该类具有静态存储时期、代码块作用域和空链接，仅在编译时初始化一次。如未
+明确初始化，它的字节将被设定为0.
+
+静态、外部链接——在所有函数外部定义、未使用static修饰的变量属于静态、外部链接存
+储类。改类具有静态存储时期、文件作用域和外部链接，仅在编译时初始化一次。如未明
+确初始化，它的字节也被设定为0.
+
+静态、内部链接——与静态、外部链接存储类不同的是，它使用static声明，也定义在所有
+函数外部，但是具有内部链接（仅能被与它在同一个文件的函数使用），仅在编译时初始
+化一次。如未明确初始化，它的字节也被设定为0.
+
+两个关键字：volatile和restrict，两者都是为了方便编译器的优化。
+
+volatile告诉编译器该被变量除了可被程序修改意外还可能被其他代理修改，因此，当要
+求使用volatile 声明的变量的值的时候，系统总是重新从它所在的内存读取数据，而不
+是使用寄存器中的缓存。比如
+\begin{lstlisting}[language=c]
+    val1=x;
+    val2=x;
+\end{lstlisting}
+如果没有声明volatile，系统在给val2赋值的时候可能直接从寄存器读取x（假定聪明的
+编译器优化了），而不是从内存的初始位置，那么在两次赋值之间，x完全有可能被被某
+些编译器未知的因素更改（比如：操作系统、硬件或者其它线程等）。如果声明为
+volatile，编译器将不使用缓存，而是每次都从内存重新读取x。
+
+而restrict是c99引入的，它只可以用于限定指针，并表明指针是访问一个数据对象的唯
+一且初始的方式，考虑下面的例子：
+\begin{lstlisting}[language=c]
+    int ar[10];
+    int * restrict restar=(int *)malloc(10*sizeof(int));
+    int *par=ar;
+\end{lstlisting}
+
+这里说明restar是访问由malloc()分配的内存的唯一且初始的方式。par就不是了。
+那么：
+\begin{lstlisting}[language=c]
+for(n=0;n<10;n++) {
+   par[n]+=5;
+   restar[n]+=5;
+   ar[n]*=2;
+   par[n]+=3;
+   restar[n]+=3;
+}
+\end{lstlisting}
+因为restar是访问分配的内存的唯一且初始的方式，那么编译器可以将上述对restar的操
+作进行优化：
+\begin{lstlisting}[language=c]
+restar[n]+=8;
+\end{lstlisting}
+
+而par并不是访问数组ar的唯一方式，因此并不能进行下面的优化：
+\begin{lstlisting}[language=c]
+   par[n]+=8;
+\end{lstlisting}
+因为在par[n]+=3前，
+ar[n]*=2进行了改变。使用了关键字restric，编译器就可以放心地进行优化了。这个关
+键字据说来源于古老的FORTRAN。有兴趣的看看这个。
+\begin{lstlisting}[language=c]
+#define offsetof(s, m)  (size_t)(&(((s *)0)->m))
+\end{lstlisting}
+
+这是offsetof的标准实现，主要是计算出结构体里成员的相对地址偏移量。
+
+这里使用0只是一个使用的技巧，方便计算出偏移量。
+
+例如：
+\begin{lstlisting}[language=c]
+struct zhx{
+int lanjuan;
+};
+\end{lstlisting}
+这个结构体里的成员lanjuan,它的相对偏移量就是4；
+这个宏里的0是地址，(s *)0，这一步是把从0这个地址开始的一块大小的内存解释成这个
+结构体类型，\&(((s *)0)->m)，这一步是取这个结构体程序m的地址，结合zhx这个结构体
+的例子，如果取成员lanjuan的地址，这个地址当然是4，对吧！也就是说，通过这个技巧，
+我们可以很方便的得到了这个成员偏移量。
+
+size_t其实就是无符号整形，也就是把上面得到的那个地址转成无符号整形，楼主的那个
+宏和这个是一个道理，但显然没这个宏定义的更加严密！
+
+\chapter{C++}
+\section{C++模板嵌套类初始化}
+\begin{lstlisting}
+//: Mixins.cpp
+#include <string>
+#include <ctime>
+#include <iostream>
+using namespace std;
+template <class T> class TimeStamped: public T {
+    long timeStamp;
+    public:
+    TimeStamped() { 
+        timeStamp = time(0);
+        cout << "TimeStamped() " << endl;
+    }
+    TimeStamped(string str) :T(str){ 
+        timeStamp = time(0);
+        cout << "TimeStamped(string str)" << endl;
+    }
+    long getStamp() { return timeStamp;}
+};
+
+template<class T> class SerialNumbered: public T {
+    long serialNumber;
+    static long counter;  /* = 1; */
+    public:
+    SerialNumbered() {
+        serialNumber = counter++;
+        cout << "SerialNumbered()" << endl;
+    }
+    SerialNumbered(string str):T(str) { 
+        serialNumber = counter++;
+        cout << "SerialNumbered(string str)" << endl;
+    }
+    long getSerialNumber() {return serialNumber;}
+};
+
+//Define and initialize the static storage:
+template<class T> long SerialNumbered<T>::counter = 1;
+
+class Basic {
+    string value;
+    public:
+    Basic() { cout << "Basic() " << endl; }
+    Basic(string init) {
+        value = init;
+        cout << "Basic(string init)" << endl;
+    }
+    void set(string val) {value = val;}
+    string get() {return value;}
+};
+
+int main() {
+    TimeStamped<SerialNumbered<Basic> >  mixin1;
+    TimeStamped<SerialNumbered<Basic> >  mixin2("test string 2");
+    mixin1.set("test string 1");
+    cout << mixin1.get() << " " << mixin1.getStamp() <<
+        " " << mixin1.getSerialNumber() << endl;
+    cout << mixin2.get() << " " << mixin2.getStamp() <<
+        " " << mixin2.getSerialNumber() << endl;
+    return 0;
+}
+
+\end{lstlisting}
+输出结果:
+\begin{verbatim}
+Basic()
+SerialNumbered()
+TimeStamped()
+Basic(string init)
+SerialNumbered(string str)
+TimeStamped(string str)
+test string 1 1293175992 1
+test string 2 1293175992 2
+\end{verbatim}
+
+这里有个注意的地方:虽然是从Basic开始调用,但是如果
+TimeStamped(string str)及SerialNumbered(string str)
+没有初始化列表T(str),那么参数是传不下去的,最终是:
+\begin{verbatim}
+Basic()
+SerialNumbered()
+TimeStamped(string str)
+\end{verbatim}
+
+\chapter{Java}
+
+\begin{lstlisting}[language=]
+下面是JDK中有关23个经典设计模式的示例：
+
+Structural（结构模式）
+
+Adapter:
+
+把一个接口或是类变成另外一种。
+
+● java.util.Arrays#asList()
+● javax.swing.JTable(TableModel)
+● java.io.InputStreamReader(InputStream)
+● java.io.OutputStreamWriter(OutputStream)
+● javax.xml.bind.annotation.adapters.XmlAdapter#marshal()
+● javax.xml.bind.annotation.adapters.XmlAdapter#unmarshal()
+Bridge:
+
+把抽象和实现解藕，于是接口和实现可在完全独立开来。
+
+● AWT (提供了抽象层映射于实际的操作系统)
+● JDBC
+Composite:
+
+让使用者把单独的对象和组合对象混用。
+
+● javax.swing.JComponent#add(Component)
+● java.awt.Container#add(Component)
+● java.util.Map#putAll(Map)
+● java.util.List#addAll(Collection)
+● java.util.Set#addAll(Collection)
+Decorator:
+
+为一个对象动态的加上一系列的动作，而不需要因为这些动作的不同而产生大量的继承类
+。这个模式在JDK中几乎无处不在，所以，下面的列表只是一些典型的。
+
+● java.io.BufferedInputStream(InputStream)
+● java.io.DataInputStream(InputStream)
+● java.io.BufferedOutputStream(OutputStream)
+● java.util.zip.ZipOutputStream(OutputStream)
+● java.util.Collections#checked[List|Map|Set|SortedSet|SortedMap]()
+Facade:
+
+用一个简单的接口包状一组组件，接口，抽象或是子系统。
+
+● java.lang.Class
+● javax.faces.webapp.FacesServlet
+Flyweight:
+
+有效率地存储大量的小的对象。
+
+● java.lang.Integer#valueOf(int)
+● java.lang.Boolean#valueOf(boolean)
+● java.lang.Byte#valueOf(byte)
+● java.lang.Character#valueOf(char)
+Proxy:
+
+用一个简单的对象来代替一个复杂的对象。
+
+● java.lang.reflect.Proxy
+● RMI
+Creational（创建模式）
+
+Abstract factory:
+
+创建一组有关联的对象实例。这个模式在JDK中也是相当的常见，还有很多的framework例
+如Spring。我们很容易找到这样的实例。
+
+● java.util.Calendar#getInstance()
+● java.util.Arrays#asList()
+● java.util.ResourceBundle#getBundle()
+● java.sql.DriverManager#getConnection()
+● java.sql.Connection#createStatement()
+● java.sql.Statement#executeQuery()
+● java.text.NumberFormat#getInstance()
+● javax.xml.transform.TransformerFactory#newInstance()
+Builder:
+
+主要用来简化一个复杂的对象的创建。这个模式也可以用来实现一个 Fluent Interface。
+
+● java.lang.StringBuilder#append()
+● java.lang.StringBuffer#append()
+● java.sql.PreparedStatement
+● javax.swing.GroupLayout.Group#addComponent()
+Factory:
+
+简单来说，按照需求返回一个类型的实例。
+
+● java.lang.Proxy#newProxyInstance()
+● java.lang.Object#toString()
+● java.lang.Class#newInstance()
+● java.lang.reflect.Array#newInstance()
+● java.lang.reflect.Constructor#newInstance()
+● java.lang.Boolean#valueOf(String)
+● java.lang.Class#forName()
+Prototype:
+
+使用自己的实例创建另一个实例。有时候，创建一个实例然后再把已有实例的值拷贝过去
+，是一个很复杂的动作。所以，使用这个模式可以避免这样的复杂性。
+
+● java.lang.Object#clone()
+● java.lang.Cloneable
+Singleton:
+
+只允许一个实例。在 Effective Java中建议使用Emun.
+
+● java.lang.Runtime#getRuntime()
+● java.awt.Toolkit#getDefaultToolkit()
+● java.awt.GraphicsEnvironment#getLocalGraphicsEnvironment()
+● java.awt.Desktop#getDesktop()
+Behavioral(行为模式)
+
+Chain of responsibility:
+
+把一个对象在一个链接传递直到被处理。在这个链上的所有的对象有相同的接口（抽象类
+）但却有不同的实现。
+
+● java.util.logging.Logger#log()
+● javax.servlet.Filter#doFilter()
+Command:
+
+把一个或一些命令封装到一个对象中。
+
+● java.lang.Runnable
+● javax.swing.Action
+Interpreter:
+
+一个语法解释器的模式。
+
+● java.util.Pattern
+● java.text.Normalizer
+● java.text.Format
+Iterator:
+
+提供一种一致的方法来顺序遍历一个容器中的所有元素。
+
+● java.util.Iterator
+● java.util.Enumeration
+Mediator:
+
+用来减少对象单的直接通讯的依赖关系。使用一个中间类来管理消息的方向。
+
+● java.util.Timer
+● java.util.concurrent.Executor#execute()
+● java.util.concurrent.ExecutorService#submit()
+● java.lang.reflect.Method#invoke()
+Memento:
+
+给一个对象的状态做一个快照。Date类在内部使用了一个long型来做这个快照。
+
+● java.util.Date
+● java.io.Serializable
+Null Object:
+
+这个模式用来解决如果一个Collection中没有元素的情况。
+
+● java.util.Collections#emptyList()
+● java.util.Collections#emptyMap()
+● java.util.Collections#emptySet()
+Observer:
+
+允许一个对象向所有的侦听的对象广播自己的消息或事件。
+
+● java.util.EventListener
+● javax.servlet.http.HttpSessionBindingListener
+● javax.servlet.http.HttpSessionAttributeListener
+● javax.faces.event.PhaseListener
+State:
+
+这个模式允许你可以在运行时很容易地根据自身内部的状态改变对象的行为。
+
+● java.util.Iterator
+● javax.faces.lifecycle.LifeCycle#execute()
+Strategy:
+
+定义一组算法，并把其封装到一个对象中。然后在运行时，可以灵活的使用其中的一个算
+法。
+
+● java.util.Comparator#compare()
+● javax.servlet.http.HttpServlet
+● javax.servlet.Filter#doFilter()
+Template method:
+
+允许子类重载部分父类而不需要完全重写。
+
+● java.util.Collections#sort()
+● java.io.InputStream#skip()
+● java.io.InputStream#read()
+● java.util.AbstractList#indexOf()
+Visitor:
+
+作用于某个对象群中各个对象的操作. 它可以使你在不改变这些对象本身的情况下,定义
+作用于这些对象的新操作.
+
+● javax.lang.model.element.Element 和javax.lang.model.element.ElementVisitor
+● javax.lang.model.type.TypeMirror 和javax.lang.model.type.TypeVisitor
+在stakeoverflow也有相应的讨论：
+
+http://stackoverflow.com/questions/1673841/examples-of-gof-design-patterns
+\end{lstlisting}
+
+
+
+\section{java与c之间的参数方法之间的调用}
+\begin{itemize}
+    \item c中返回一个字符串
+\begin{lstlisting}
+       ...................
+     （*env）->NewStringUTF(env,"zhongguo 中国");
+      ...................
+\end{lstlisting}
+
+\item 2: c中返回一个数组
+\begin{lstlisting}
+    .....................
+    int i = 0;
+    jintArray array;
+    array = (*env)->NewIntArray(env,10);
+    for(;i<10;i++)
+    {
+        (*env)->SetObjectArrayElement(env,array,i,i*2);
+    }
+    return array;
+\end{lstlisting}
+
+\item 3:c中使用调用传入的参数是数组 array 是传入的数组
+\begin{lstlisting}
+    .........
+   int sum =0, i;
+   int len = (*env)->GetArrayLength(env,array);
+   jint *element = (*env)->GetIntArrayElement(env,array,0);
+   for(i=0;i<len;i++)
+   {
+       sum += *(element+i);
+    }
+  return sum;
+\end{lstlisting}
+
+\item 4: c中调用java中类的方法 没有参数 只有返回值String
+    @" ()Ljava/lang/String;" 表示参数为空 返回值是String类型 
+\begin{lstlisting}
+  JNIEXPORT jstring JNICALL Java_tao_hai_bing_Demo_getCallBack(JNIENV env,jobject object){
+
+    jmethodID mid;
+    //后面是包名 + 类名
+    jclass cls = (*env)->FindClass(env,"tao/hai/bing/Demo"); 
+   // Callback java 中的方法名
+   mid = (*env)->GetMethodID(env,cls,"Callback","()Ljava/lang/String;");
+   //object 注意下是 jni 传过来的 jobject
+   jstring msg = (*env)->CallObjectMethod(env,object,mid); 
+   return msg;
+}
+\end{lstlisting}
+
+\item 5: c中调用java中类的静态方法 没有参数 只有返回值String
+    @" ()Ljava/lang/String;" 表示参数为空 返回值是String类型 
+\begin{lstlisting}
+  JNIEXPORT jstring JNICALL Java_tao_hai_bing_Demo_getCallBack(JNIENV env,jobject object){
+
+    jmethodID mid;
+    //后面是包名 + 类名
+    jclass cls = (*env)->FindClass(env,"tao/hai/bing/Demo"); 
+    //Callback java 中的方法名
+   mid = (*env)->GeStatictMethodID(env,cls,"Callback","()Ljava/lang/String;");
+   //object 注意下是 jni 传过来的 jobject
+   jstring msg = (*env)->CallStaticObjectMethod(env,cls,mid); 
+   return msg;
+}
+\end{lstlisting}
+
+\item 6: c中调用java中类的方法 二个参数 第一个参数是int 第二个参数是String 返回值是String
+    @ "(ILjava/lang/String;)Ljava/lang/String" 表示参数是第一个参数是整形 第二个参数是String  返回值是String
+\begin{lstlisting}
+  JNIEXPORT jstring JNICALL Java_tao_hai_bing_Demo_getCallBack(JNIENV env,jobject object){
+
+  jmethodID mid;
+  //后面是包名+类名
+  jclass cls = (*env)->FindClass(env,"tao/hai/bing/Demo");
+  //Callback java 中的方法名
+  mid = (*env)->GeStatictMethodID(env,cls,"Callback","(ILjava/lang/String;)Ljava/lang/String;");
+  jstring param = (*env)->NewStringUTF(env,"taohaibing");
+  //object 注意下是 jni 传过来的 jobject
+  jstring msg = (*env)->CallStaticObjectMethod(env,cls,mid,22,param); 
+  return msg;
+}
+\end{lstlisting}
+
+8: c中调用java中的全局变量   
+\begin{lstlisting}
+   jclass cls = (*env)->FindClass(env,"tao/hai/bing/Demo");
+   //num 为 java 中的变量 I 表示这个变量的类型是整形
+   jfieldID id = (*env)->GetFieldID(env,cls,"num","I");
+   jint param = (*env)->GetIntField(env,object,id);
+
+   //num2 为 java 中的变量  I 表示这个变量的类型是 String
+   jfieldID id2 = (*env)->GetFieldID(env,cls,"num2","Ljava/lang/String");
+   jstring param = (*env)->GetObjectField(env,object,id);
+\end{lstlisting}
+
+\item 8: c中调用java中的静态的变量
+\begin{lstlisting}
+   jclass cls = (*env)->FindClass(env,"tao/hai/bing/Demo");
+   //num 为 java 中的变量 ,I 表示这个变量的类型是整形
+   jfieldID id = (*env)->GetStaticFieldID(env,cls,"num","Ljava/lang/String");
+   jstring param = (*env)->GeStaticObjectField(env,cls,id); 
+\end{lstlisting}
+\end{itemize}
+
+\chapter{UML}
+本节向大家介绍一下Visio  UML建模方面的知识，Visio  UML建模描述模型的内容有三种，分别是事物、关系和图。相信通过本节的学习你对Visio  UML建模一定会有深刻的认识。
+
+Visio  UML建模
+
+UML建模描述模型的内容有三种，分别是事物、关系和图
+事物有：类，接口，用例，组件，结点，交互，包，注释等
+
+类：
+Visio  UML建模中类分为三部分，顶部为　类名，中间为　属性，下层为　方法
+在属性或方法前面有三种符号分别是：＋，－，\#；代表属性或方法的可见性级别；
++public-private\#protected
+
+类名：如果是抽象类，类名用斜体表示。非抽象类用正体显示
+
+属性：　可见性（+-\#）属性名[:类型][=默认值]　如：　+eye:int=2
+
+方法：　可见性(+-\#)方法名([参数名:类型][,参数名:类型])
+
+
+接口
+
+用例：
+
+
+UML的关系
+
+关联关系，泛化关系，依赖关系，实现关系
+
+关联关系：
+
+关联关系是有方向的　分为　双向关联和单向关联，双向关联　用一个双向实线箭头表示，单向关联　用一个单向实线箭头表示。上图为一个单向关联，类的表式形式为：
+class企鹅{
+private气候　qh;
+}
+关联关系包含　聚合关系和合成关系
+
+聚合关系：
+
+Visio  UML建模中聚合关系是一种弱的拥有关系，代表Ｂ对象可以拥有Ａ对象，但Ａ对象不是Ｂ对象的一部分。聚合关系用一个空心棱形和一条实线表示。
+如：雁群拥有好多大雁，但是大雁不是雁群的一部分。
+
+合成关系：
+Visio  UML建模中合成关系是一种强的拥有关系，表示Ａ对象必须拥有Ｂ对象，Ｂ对象作为Ａ对象的一部分存在。体现了严格　的局部与整体的关系。合成关系用一个实心棱型和一条实线组成。
+如：鸟，必须要有翅膀，翅膀作为鸟的一部分存在，不能单独存在
+
+泛化关系：
+
+Visio  UML建模中泛化关系，相当于继承关系。表示，在父类出现的地方可以用子类来代替，但是反过来则不成立。泛化描述的是ISA……的关系。
+泛化的两种主要用途是：子类重写父类　多态，子类扩展父类　继承
+泛化关系用一个空心三角和一条实线表示。
+如图：在出现动物的地方我们可以用鸟这个对象，但是如果在出现鸟对象的地方我们则不能用动物对象来替代。
+
+依赖关系：
+
+Visio  UML建模中依赖关系表示当对象Ａ发生变化时，对象Ｂ也随着变化，则叫做Ｂ依赖Ａ。依赖关系用虚线箭头表示。
+常用于：做为一个方法的参数（Ｂ对象要用Ａ对象做参数），做为方法的返回值（Ｂ对象返回Ａ对象），方法中的调用（Ｂ对象中调用Ａ对象）。
+如上图中：动物的新陈代谢要用氧气和水，代码为
+class动物｛
+public void新陈代谢（氧气，水）｛｝
+｝
+ 模板类的参数类，就可以看作依赖关系吧！
+
+实现关系
+
+Visio  UML建模中实现关系不继承结构，只继承行为。实现关系用来定义接口与实现接口之间的关系。
+实现关系常用于接口的实现，用例与实现用例的协作时间。实现关系用一条虚线和一个空心三角组表示或用空心圆加实线表示。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+深入剖析UML时序图组成
+本文和大家重点讨论一下UML时序图问题，UML时序图描述对象是如何交互的，并且将重点放在消息序列上，并且UML时序图中包括如下元素，类角色，生命线，激活期和消息。具体内容请看本文详细介绍。
+
+UML时序图
+
+时序图（SequenceDiagram）用来显示对象之间的关系，并强调对象之间消息的时间顺序，同时显示了对象之间的交互。
+
+UML时序图描述对象是如何交互的，并且将重点放在消息序列上。也就是说，描述消息是如何在对象间发送和接收的。时序图有两个坐标轴：纵坐标轴显示时间，横坐标轴显示对象。每一个对象的表示方法是：矩形框中写有对象或类名，且名字下面有下划线；同时有一条纵向的虚线表示对象在序列中的执行情况(即发送和接收的消息对象的活动)，这条虚线称为对象的生命线。对象间的通信用对象的生命线之间的水平的消息线来表示，消息线的箭头说明消息的类型，如同步，异步或简单。浏览时序图的方法是，从上到下查看对象间交换的消息，分析那些随着时间的流逝而发生的消息交换。
+
+UML时序图中包括如下元素，类角色，生命线，激活期和消息。
+
+1、类角色（ClassRole）
+
+类角色代表UML时序图中的对象在交互中所扮演的角色，位于时序图顶部。类角色一般代表实际的对象。
+
+2、生命线（Lifeline）
+
+生命线代表时序图中的对象在一段时期内的存在。时序图中每个对象和底部中心都有一条垂直的虚线，这就是对象的生命线，对象间的消息存在于两条虚线间。
+
+3、激活期（Activation）
+
+激活期代表uml时序图中的对象执行一项操作的时期，在时序图中每条生命线上的窄的矩形代表活动期。
+
+4、消息（Message）
+
+消息是定义交互和协作中交换信息的类，用于对实体间的通信内容建模，信息用于在实体间传递信息。允许实体请求其他的服务，类角色通过发送和接受信息进行通信。
+
+UML时序图中的消息可以是信号、操作调用或类似于C++中RPC（RemoteProcedureCall,远程过程调用）或Java中的RMI（RemoteMethodInvocation，远程方法调用）。当对象接收到一个消息时，该对象中的一项活动就会启动，我们把这一过程称做激活（Activation）。激活会显示控制焦点，表明对象在某一个时间点开始执行。一个被激活的对象或者是执行它自身的代码，或者是等待另一个对象的返回（该被激活的对象已经向另一个对象发送了消息）。在图形上，激活被绘制为对象生命线上的一个瘦高矩形。
+
+消息可以用消息名及参数来标识。消息还可带有条件表达式，表示分支或决定是否发送消息。如果用于表示分支，则每个分支是相互排斥的，即在某一时刻仅可发送分支中的一个消息。消息也可以有顺序号，但是在时序图中，消息的顺序号很少使用，因为时序图已经将消息的顺序显式地表示出来了。
+
+\chapter{Bash}
+编辑命令
+
+    Ctrl + a ：移到命令行首\\
+    Ctrl + e ：移到命令行尾\\
+    Ctrl + f ：按字符前移（右向）\\
+    Ctrl + b ：按字符后移（左向）\\
+    Alt + f ：按单词前移（右向）\\
+    Alt + b ：按单词后移（左向）\\
+    Ctrl + xx：在命令行首和光标之间移动\\
+    Ctrl + u ：从光标处删除至命令行首\\
+    Ctrl + k ：从光标处删除至命令行尾\\
+    Ctrl + w ：从光标处删除至字首\\
+    Alt + d ：从光标处删除至字尾\\
+    Ctrl + d ：删除光标处的字符\\
+    Ctrl + h ：删除光标前的字符\\
+    Ctrl + y ：粘贴至光标后\\
+    Alt + c ：从光标处更改为首字母大写的单词\\
+    Alt + u ：从光标处更改为全部大写的单词\\
+    Alt + l ：从光标处更改为全部小写的单词\\
+    Ctrl + t ：交换光标处和之前的字符\\
+    Alt + t ：交换光标处和之前的单词\\
+    Alt + Backspace：与 Ctrl + w 相同类似，分隔符有些差别 [感谢 rezilla 指正]\\
+
+重新执行命令
+
+    Ctrl + r：逆向搜索命令历史\\
+    Ctrl + g：从历史搜索模式退出\\
+    Ctrl + p：历史中的上一条命令\\
+    Ctrl + n：历史中的下一条命令\\
+    Alt + .：使用上一条命令的最后一个参数\\
+
+控制命令
+
+    Ctrl + l：清屏\\
+    Ctrl + o：执行当前命令，并选择上一条命令\\
+    Ctrl + s：阻止屏幕输出\\
+    Ctrl + q：允许屏幕输出\\
+    Ctrl + c：终止命令\\
+    Ctrl + z：挂起命令\\
+
+Bang (!) 命令
+
+    !!：执行上一条命令\\
+    !blah：执行最近的以 blah 开头的命令，如 !ls\\
+    !blah:p：仅打印输出，而不执行\\
+    !\$：上一条命令的最后一个参数，与 Alt + . 相同\\
+    !\$:p：打印输出 !\$ 的内容\\
+    !*：上一条命令的所有参数\\
+    !*:p：打印输出 !* 的内容\\
+    \^{}blah：删除上一条命令中的 blah\\
+    \^{}blah\^{}foo：将上一条命令中的 blah 替换为 foo\\
+    \^{}blah\^{}foo\^{}：将上一条命令中所有的 blah 都替换为 foo\\
+
+友情提示：
+
+    以上介绍的大多数 Bash 快捷键仅当在 emacs 编辑模式时有效，若你将 Bash 配置为 vi 编辑模式，那将遵循 vi 的按键绑定。Bash 默认为 emacs 编辑模式。如果你的 Bash 不在 emacs 编辑模式，可通过 set -o emacs 设置。
+\^{}S、\^{}Q、\^{}C、\^{}Z 是由终端设备处理的，可用 stty 命令设置。
+
+\chapter{perl}
+\begin{lstlisting}[language=perl]
+perl gencfgmin.pl ../../Amoi/amoimmi.cfg >AmoiCfg.min
+\end{lstlisting}
+perl gencfgmin.pl表示执行脚本gencfgmin.pl, ../../Amoi/amoimmi.cfg >AmoiCfg.min
+表示执行脚本时输入../../Amoi/amoimmi.cfg,输出AmoiCfg.min。
+
+\section{Perl常见特殊变量}
+\begin{description*}
+    \item [\$_]\$ARG，常常是一个默认变量 
+    \item [@_]@ARG，子例程参数表 
+    \item [\$0] \$PROGRAM_NAME，本程序的名字,批处理是\%0
+    \item [@ARGV]本程序的命令行参数表 
+    \item [\$"]\$LIST_SEPARATOR，数组内插到双引号字符串中时所用的分隔符，默认为空格 
+    \item [\$,]\$OFS，或\$OUTPUT_FIELD_SEPARATOR，用于print的输出字段分隔符，即一个print
+        语句中用逗号分隔的部分之间用什么分隔，默认为无 
+    \item [\$ ]\$ORS，或\$OUTPUT_RECORD_SEPARATOR，用于print的输出记录分隔符， 即一个
+        print语句结束时末尾添加什么，默认为无 
+    \item [\$/] \$RS，或\$INPUT_RECORD_SEPARATOR，输入记录分隔符，改变了readline，<FH>
+        和chomp对于“行”的看法，默认为换行符 
+    \item [\$.] \$NR，或\$INPUT_LINE_NUMBER，最后读取的“行”号(注意行的概念可能被\$/所改变) 
+        \begin{lstlisting}[language=perl]
+            while ( <> ) {
+            print "$.\t$_"; #可以对命令行输入的文件加行号.  
+            }
+        \end{lstlisting}
+    \item [\$|] \$AUTOFLUSH，或\$OUTPUT_AUTOFLUSH，输出缓冲区开关，默认为0，即关。
+    \item [\$\$]\$PID，或\$PROCESS_ID，本脚本的进程号(PID) 
+    \item [\$!]\$ERRNO，或\$OS_ERROR，上一次系统调用错误值. '!'就是警告的标志。
+    \item [\$@]\$EVAL_ERROR，上一次eval操作错误值 
+    \item [\$\^~I]\$INPLACE_EDIT，现场编辑的备份文件扩展名 
+    \item [\%ENV]当前环境变量 
+
+    \item [\$\^~O] 操作系统名称。 
+        \begin{lstlisting}[language=perl,multicols=2,xleftmargin=2pt]
+         use English;
+         print $OSNAME; 
+
+         use Config; 
+         print $Config{'osname'}; 
+        \end{lstlisting}
+    \item [与正则表达式相关的几个量] \$` , \$\& , \$'  。 vi中 可以使用
+        \lstinline{%s/foo*/&sss/}
+        \begin{lstlisting}[language=,]
+        |<-($`)->|<-($&)->|<-($')->| 
+        /------- mmmmmmmmm ++++++++/ <= 正则表达式(空格不代表实际空格) 
+        |       | 匹配部分 |       |
+        0    ($-[0])      ($+[0]) 
+        \end{lstlisting}
+
+    \item [六个特殊的文件句柄]
+        	STDIN, STDOUT, STDERR, DATA, ARGV, and ARGVOUT.
+
+\end{description*}
+
+\section{基本语法}
+
+哈希变量用百分号'\%'表示，数组用'@'表示，标量用'\$'表示。
+\begin{lstlisting}[language=perl]
+    $b = $a; #把 a 的值赋给变量 b
+    $ref = \$a; #对数组 a 建立引用
+    $ref = \%b; #对哈希结构 b 建立引用
+    $ref = \@a; #对数组 a 建立引用
+\end{lstlisting}
+那 $\backslash$\&filehandle 可以理解为对函数filehandle的引用(这
+里加\&，是保证在函数定义前能调用函数，在函数定义后调用函数可以不
+加\&)。
+
+\begin{description*}
+    \item [注释] Perl脚本单行注释用"\#"，多行注释的方法是：
+        "=head"或"=pod"开始，"=cut"结束。
+    \item [文件测试运算符] -d -e -f -r -s -w -z -T -B -M 
+    \item [比较] 数字比较与字符串比较都是用不同的运算符，
+        Perl和C语言都是这样的。Perl 数学比较是'==', '>',
+        '<', '>=', '<=', '!='。字符串比较是'eq', 'gt', 
+        'lt', 'ge', 'le', 'ne'。  equal =>e, than => t。
+    \item [给数组重新排序]飞船运算符，比较数字值，和sort
+        函数一起给数组排序，如果要比较字符串要使用cmp运
+        算符。
+
+    \item [数组索引] 要想知道数组最后一个索引编号是多少，
+        可以在数组前面加上一个\$\#前缀，比如\$\#array。注
+        意索引编号从0开始的。
+        \begin{lstlisting}[language=perl]
+            @array=qw(this is an array of string);
+            print "$#array";
+        \end{lstlisting}
+    \item [大小写转换] 
+        lc, uc 函数
+        \begin{lstlisting}[language=perl]
+            lc $_; #lc->lowercase, 把变量中的字母全部变成小写。
+            uc $_; #uc->uppercase, 把变量中的字母全部变成大写。
+        \end{lstlisting}
+\end{description*}
+小括号总是用于列表上下文，包括数组初始化，也包括哈希结构初始化，以及函数调用。
+而花括号用于代码块，
+
+匿名存储就是为了方便创建复杂的数据结构。注意与创建哈希结构和数组赋值区别：
+\begin{lstlisting}[language=perl]
+%hash = (phone => 'Bell', light => 'Edison');
+@array = qw( Crosby Stills Nash Young);
+\end{lstlisting}
+花括号可以创建匿名哈希结构以供引用，可以访问哈希结构的关键字/值－即内部元素。
+而方括号可以创建匿名数组以供引用，也可以用来访问数组元素。
+
+\subsection{单行条件 }
+  语法为statement keyword condexpr。其中keyword可为if、unless、while或until，
+如：
+\begin{lstlisting}[language=perl]
+    print ("This is zero.\n") if ($var == 0);
+    print ("This is zero.\n") unless ($var != 0);
+    print ("Not zero yet.\n") while ($var-- > 0);
+    print ("Not zero yet.\n") until ($var-- == 0);
+\end{lstlisting}
+  虽然条件判断写在后面，但却是先执行的。if是在条件为真的时候执行其中的语句，
+  而unless是在条件为假的时候执行其中的语句，刚好相反。
+\subsection{eval}
+eval : abbreviation,’perldoc -f eval’ 
+
+eval\{\};
+
+code block or expression can both within the parenthesis.
+When a normally fatal error happens during the execution of an eval block, 
+the block is done running, but the program doesn't crash. 
+如果小程序中有语法错误、运行时错误遇到 die 语句， eval 将返回 undef 。错误码被
+保存在 \$@ 中。 
+
+\subsection{oct EXPR }
+Interprets EXPR as an octal string and returns the corresponding value. (If 
+EXPR happens to start off with 0x , interprets it as a hex string. If EXPR 
+starts off with 0b, it is interpreted as a binary string. Leading whitespace 
+is ignored in all three cases.) The following will handle decimal, binary, 
+octal, and hex in the standard Perl or C notation:
+\begin{lstlisting}[language=perl]
+    $val = oct($val) if $val =~ /^0/;
+\end{lstlisting}
+\subsection{String Operators}
+String values can be concatenated with the . operator. (Yes, that's a single 
+period.) This does not alter either string, any more than 2+3 alters either 2
+ or 3. The resulting (longer) string is then available for further computation
+  or to be stored into a variable. For example: 
+\begin{lstlisting}[language=perl]
+"hello" . "world"       # same as "helloworld"
+"hello" . ' ' . "world" # same as 'hello world'
+'hello world' . "\n"    # same as "hello world\n"
+\end{lstlisting}
+Note that the concatenation must be explicitly requested with the . operator, 
+unlike in some other languages where you merely have to stick the two values 
+next to each other. 
+
+A special string operator is the string repetition operator, consisting of 
+the single lowercase letter x. This operator takes its left operand (a string) 
+and makes as many concatenated copies of that string as indicated by its right
+ operand (a number). For example: 
+\begin{lstlisting}[language=perl]
+"fred" x 3       # is "fredfredfred"
+"barney" x (4+1) # is "barney" x 5, or "barneybarneybarneybarneybarney"
+5 x 4            # is really "5" x 4, which is "5555"
+\end{lstlisting}
+
+\subsection{glob}
+my @all_files_including_dot = glob ".* *";
+Here, we've included an additional "dot star" parameter to get the filenames 
+that begin with a dot as well as the ones that don't. Please note that the 
+space between these two items inside the quoted string is significant, as it
+ separates two different items to be globbed.
+
+\subsection{stdin}
+One operator that can return undef is the line-input operator, <STDIN>. 
+Normally, it will return a line of text. But if there is no more input, such 
+as at end-of-file, it returns undef to signal this.[29] To tell whether a 
+value is undef and not the empty string, use the defined function, which 
+returns false for undef, and true for everything else: 
+[29] Normally, there's no "end-of-file" when the input comes from the 
+keyboard, but input may have been redirected to come from a file. Or the user
+ may have pressed the key that the system recognizes to indicate end-of-file. 
+\begin{lstlisting}[language=perl] 
+$madonna = <STDIN>;
+if ( defined($madonna) ) {
+  print "The input was $madonna";
+} else {
+  print "No input available!\n";
+}
+\end{lstlisting}
+If you'd like to make your own undef values, you can use the obscurely named 
+undef operator: 
+\begin{lstlisting}[language=perl] 
+$madonna = undef; # As if it had never been touched
+\end{lstlisting}
+
+\subsection{Hash Functions}
+keys, values
+The keys function yields a list of all the current keys in a hash, while the 
+values function gives the corresponding values. If there are no elements to 
+the hash, then either function returns an empty list: 
+\begin{lstlisting}[language=perl] 
+my %hash = ("a" => 1, "b" => 2, "c" => 3);
+my @k = keys %hash;
+my @v = values %hash;
+\end{lstlisting}
+
+So, @k will contain "a", "b", and "c", and @v will contain 1, 2, and 3—in 
+some order.
+
+
+\section{作用域的说明}
+\begin{lstlisting}[language=perl]
+$office = "global";  # Global $office
+&say( );             # says "global", accessing $office directly 
+&fred( );            # says "fred", dynamic scope,
+    	             # because fred's local $office hides the global 
+&barney( );          # says "global", lexical scope;
+    		     # barney's $office is visible only in that block 
+sub say { print "$office\n"; }         # print the currently visible $office
+sub fred { local($office) = "fred"; &say( ); }
+sub barney { my($office) = "barney"; &say( ); }
+\end{lstlisting}
+
+Perl对变量默认采取是全局，不管是在主程序还是子例程、代码块。要使变量化为局部
+的，加my。
+In the rare case that you truly need a global variable while use strict is in
+ effect, you may declare it with the vars pragma.[B] This package-scoped pragma
+tells Perl that you are intentionally using one or more global variables: 
+[B] If your program will never be used with a version of Perl prior to 5.6, 
+you should use the 'our' keyword instead of the vars pragma.
+\begin{lstlisting}[language=perl]
+use strict;
+use vars qw/ $fred $barney /; 
+$fred = "This is a global variable, but that's all right.\n";
+\end{lstlisting}
+  
+[perl]定义不同类型变量,作用域的说明
+\begin{enumerate*}
+    \item our 不加任何前缀来定义的变量，默认为全局变量 只用于5.6版本或更高
+    \item my 字典作用域变量 只在定义它的代码块内才可以使用
+    \item local 动态作用域 从他创建的位置开始，直到当前块结束之前，才可以使用它
+    \item 对块内子程序来说，只要在允许范围内，一样可以访问这些变量 
+\end{enumerate*}
+
+\section{PERL中的命令行参数}
+在子例程中，如果没有设定其他数组，那么pop、shift、unshift和push函数将修改@_。
+在子例程外面，你的程序主体中，如果没有设定其他数组，那么这些函数将修改数组
+@ARGV。
+
+
+  象C一样，PERL也有存储命令行参数的数组@ARGV，可以用来分别处理各个命令行参数；
+与C不同的是，\$ARGV[0]是第一个参数，而不是程序名本身。
+\begin{lstlisting}[language=perl]
+    $var = $ARGV[0]; # 第一个参数
+    $numargs = @ARGV; # 参数的个数
+\end{lstlisting}
+    
+PERL中，<>操作符实际上是对数组@ARGV的隐含的引用，其工作原理为：
+\begin{enumerate*}
+    \item 当PERL解释器第一次看到<>时，打开以\$ARGV[0]为文件名的文件；
+    \item 执行动作shift(@ARGV); 即把数组@ARGV的元素向前移动一个,其元素即减少一个
+    \item <>操作符读取在第一步打开的文件中的所有行。
+    \item 读完后，解释器回到第一步重复。
+\end{enumerate*}
+  例：
+  \begin{lstlisting}[language=perl]
+      @ARGV = ("myfile1", "myfile2"); #实际上由命令行参数赋值
+      while ($line = <>) {
+          print ($line);
+      } 
+
+      foreach $arg (@ARGV) {
+          print "one arg is $arg\n";
+      }
+  \end{lstlisting}
+  将把文件myfile1和myfile2的内容打印出来。
+  
+
+while (<>) {} 无限循环（an forever loop）
+<>, no space in them.
+
+\subsection{命令行选项}
+ The -n option is used to place your script inside of an input loop.
+ 
+ The -p option uses the same loop, but also prints the \$_ variable
+ after each pass through the loop.
+ 
+ The -a and -F options are used when you want the input lines to be split
+ into the @F array. 
+
+Another very useful option is -i, which lets you edit files in-place. 
+This option is good when you are doing a lot of text file manipulation. 
+
+\section{子例程参数传递}
+在子例程中，被传递的参数可以通过Perl的特殊变量@_来访问。
+请记住， \$_[0]（@_的一个下标）与标量变量\$_毫不相干.
+对\$_[3]这样的变量名进行操作并不是一种“明确的”编程风格。
+拥有多个参数的函数常常为这些参数赋予一个名字，这样，
+就能够清楚地知道它们能够做些什么。就像C语言中的参数列表一样。
+
+\begin{lstlisting}[language=perl]
+sub display_box_score {
+    ($hits, $at_bats) = @_;
+    print "For $at_bats trips to the plate, ";
+    print "he's hitting ", $hits/$at_bats, "\n";
+}
+display_box_score(50, 210);
+\end{lstlisting}
+在上面这个子例程中，数组@_被拷贝到列表(\$hits，\$at_bats）
+中。@_的第一个元素 \$_[0]变成了\$hits，第二个元素变成了
+\$at_bats。这里使用变量名增强了可读性。
+变量@_实际上包含了传递给子例程的原始参数的别名。如果
+修改了@_（或者修改了@_的任何元素），就会修改参数列表中的
+元素变量。如果突然进行这样的修改，将被视为一种不好的做法，
+你的函数不应该干扰来自函数调用者的参数，除非函数的使用者
+要求这样做。将两个或多个哈希结构（或数组）传递给子例程，
+通常并不执行你想要做的操作。这时需要使用引用。（在构
+造复杂数据结构时也是使用引用）
+
+
+若要传递函数、多个数组和哈希结构，必须使用引用。若要
+将文件句柄传递给子例程，或者从子例程那里接收文件句柄，
+必须使用称为typeglob的工具，或者使用IO::Handle模块。
+
+子例程还允许你取出子例程中的代码，并使它独自运行。这
+就是说，你可以让它只使用它的参数、该语言的内置函数和
+表达式来运行，以产生一个返回值。然后你可以在其他程序
+中重复使用该函数，因为该函数不再依赖它被调用时所在的
+上下文，它只是取出它的参数，即内部数据，然后产生一个
+返回值。该函数将变成一个黑匣子，数据可以进去，也可以
+出来，你不必从外面关心发生了什么事情。这称为纯函数。
+
+按照默认设置，在你的程序的主体中和子例程中，Perl的变量
+是可视的，这些类型的变量称为全局变量。你要做的工作是使
+变量成为函数的专用变量。为此，必须使用my操作符
+
+\section{循环}
+\begin{description*}
+    \item[针对列表(数组)每个元素的循环：foreach] 语法为：
+\begin{lstlisting}[language=perl]
+  foreach localvar (listexpr) {
+    statement_block;
+  }
+例：
+\begin{lstlisting}[language=perl]
+  foreach $word (@words) {
+    if ($word eq "the") {
+      print ("found the word 'the'\n"); 
+    }
+  }
+\end{lstlisting}
+(1)此处的循环变量localvar是个局部变量，如果在此之前它已
+有值，则循环后仍恢复该值。\\
+(2)在循环中改变局部变量，相应的数组变量也会改变，如：
+\begin{lstlisting}[language=perl]
+  @list = (1, 2, 3, 4, 5);
+  foreach $temp (@list) {
+    if ($temp == 2) {
+      $temp = 20;
+    }
+  }
+\end{lstlisting}
+此时@list已变成了(1, 20, 3, 4, 5)。
+\item [do循环]
+\begin{lstlisting}[language=perl]
+  do {
+    statement_block
+  } while_or_until (condexpr);
+\end{lstlisting}
+  do循环至少执行一次循环。
+\item [循环控制] 
+  退出循环为last，与C中的break作用相同；执行下一个循环为next，与C中的continue
+  作用相同；PERL特有的一个命令是redo，其含义是重复此次循环，即循环变量不变，
+  回到循环起始点，但要注意，redo命令在do循环中不起作用。
+\item [传统的goto label;语句]
+\end{description*}
+
+Perl的5.004和更新的版本允许将for和foreach循环中的迭代器以及while和if中的测试条
+件声明为代码块的专用迭代器和测试条件：
+\begin{lstlisting}[language=perl]
+foreach my $element (@array) {
+# $element is only visible in the foreach()
+}
+
+while (my $line=<STDIN>) {
+# $line is visible only in the while()
+}
+\end{lstlisting}
+
+
+\section{正则表达式}
+对正则表达式的运算有匹配和替换。匹配使用界限符"m//"指定，替换运算符是"s///"，
+斜杠之间是字符串，可以用其他的界限符来取代斜杠，"m//"可以省略为"//"，但其他的
+饥饿线符不行。匹配的对象默认是特殊变量"\$_"，也可以使用连接运算符'=~'是用来指定
+其他运算对象，用法是连接运算对象和匹配/替换运算符。
+使用正则表达式进行模式匹配是在条件表达式中。
+变量可以在正则表达式使用。如果正则表达式有标量变量，Perl会先计算该变量得到真正
+的模式，然后再去匹配。此功能可以让我们动态创建正则表达式。
+模式匹配规则:
+		通常,模式从目标字符串的左边开始匹配,匹配方向是从左向右.若目标字符串有多个
+子串可以匹配模式,那么第一个子串将被匹配, 但是这个子串不是别的能匹配的子串的子
+串,也就是说这个子串的起始字符是能匹配子串中最左的字符,并且是以这个字符为起始
+的能够匹配模式的最长子串.当目标字符串中只有一部分与正则表达式相匹配,整个字符
+串也是说匹配模式的.只有当模式能够与目标字符串相匹配时,模式才返回真.
+		
+元字符
+模式中有元字符，在元字符前加"$\backslash$"(反斜杠)可以使其转换为普通字符。而有些普通字符
+在其前加反斜杠后却变成了元字符.
+正则表达式中通配符与我们在Shell、DOS脚本中的通配符有所不同，脚本中'*','?'的作
+用在Perl中要用'.*','.?'--相比之下就是要多个句点'.'。Perl中'.'表示任意一个普通
+字符（换行符除外），'+'表示任意多个（至少一个）其前的(普通)字符，'*'表示任意
+多个（可以为0个）其前的(普通)字符,'?'表示一个或零个前面的普通字符。在脚本中'*'
+表示任意多个（可以为0个）(普通)字符,'?'表示一个或零个普通字符，直接是任意字符，
+没有前面的字符为限。
+但Perl中可以用花括号来量化匹配次数，格式是：pat{n,m}。如：a{8}表示a要出现8次，
+a{8,}表示a至少出现8次，a{0,8}表示a最多出现8次也可不出现，a{2,8}表示a最少出现2
+次最多出现8次。
+Perl中用方括号来拓展匹配的字符集合，格式是：[character set]。character set即
+匹配的字符集，匹配其中任意一个字符即可，这个叫做字符类，在字符类中大多数通配
+符变成普通字符。如[abcde]和[a-e]（连字符连接上限和下限）均表示匹配a、b、c、d
+或e中的任意一个字符。
+方括号算是对'.'扩充。而花括号算是对'*','?'扩充。如[A-Za-z]{5}表示匹配任何一组
+5个字母字符。需要注意的是，在字符集中只有4个 字符具有特殊含义。它们是：
+\verb|] \ ^ -|。"\verb|]|"代表字符集定义的结束；"$\backslash$"代表转义；"\^~"代表取反；"-"代
+表范围定义。其他常见的元字符在字符集定义内部都是正常字符，不需要转义。例如，
+要搜索星号*或加号+，你可以用[+*]。
+[$\backslash$S] = =[\^~$\backslash$s]
+
+而括号可以指定模式集合，集合用'|'分割模式，匹配时只要匹配集合中的一个模式即
+可。而且这个模式可以作为一个模式的部分。
+
+位置通配符：插入记号'\^~'和美元符号'\$'。插入记号表示只在每行的开始匹配，他也只
+出现在界限符的开始。美元符号表示只在每行的末尾匹配，他也只出现在界限符的末尾。
+
+第二个界限符之后可以跟字符i和g，i表示模式中字母不区分大小写，g表示多次匹配，
+这样可以得到最后的匹配字符串。
+
+可以使用特殊字符序列来代表某些不可显示字符：
+$\backslash$t代表Tab(0x09),$\backslash$r代表回车符(0x0D),$\backslash$n代表换行符(0x0A)
+要注意的是Windows中文本文件使用“$\backslash$r$\backslash$n”来结束一行而Unix使用“$\backslash$n”。
+
+正则表达式不仅在Perl中有用，在Emaca、SourInsight等软件中都支持正则表达式搜寻，
+例如在SourInsight的Lookup Reference功能中。输入: \^~struct ，在Search Method中选
+择Regular Expression，就可以搜寻以struct开头的所有行。输入：base;\$ ，表示以 
+base; 结束的行了。
+Decorator$\backslash$s*base;\$   这个表达式是搜寻含Decorator并以base;结尾的行。
+s/ //g  可以去掉空格。
+
+正则表达式很适合用于搜索标量变量.但是,有几个专门搜索标量变量的函数,如index, 
+rindex可以在目标字符串中寻找单个字符串，虽然没有正则表达式强悍，但是易用。而
+且返回值表示子字符串在目标字符串中位置，0表示最左边的字符。
+
+
+
+
+\section{模块}
+\subsection{安装模块}
+\begin{lstlisting}[language=perl]
+    $sudo perl -MCPAN -e shell;
+    $perl -e 'print "@INC\n"' 
+    $perl -e 'print @INC'
+\end{lstlisting}
+
+在Win下如何刷新ActiveState Perl的HTML帮助？
+    手动安装模块后，ActivePerl的HTML帮助文件不会自动更新，用下面的命令就能强
+制刷新了:
+\begin{lstlisting}[language=perl]
+perl -MActivePerl::DocTools -eUpdateHTML
+\end{lstlisting}
+
+\subsection{Cwd}
+\begin{lstlisting}[language=perl]
+    use	Cwd；#将Cwd模块纳入程序，在外壳命令行键入：perldoc Cwd，可以得到模块的
+    				 #文档。Cwd表示current working directory
+    my $cwd = cwd(); #The cwd() is the most natural form for the current 
+                     #architecture. For most systems it is identical to 
+                     #`pwd` (but without the trailing line terminator).
+                     #pwd 命令代表“print working directory”（打印工作目录）。
+                     #DOS下直接键入cd，显示当前目录，与pwd作用一样。
+                     #Linux下键入cd ~,目录转换到当前用户的主目录：如果是
+                     ＃cd ~xusl,工作目录转换到用户xusl的主目录。    
+\end{lstlisting}
+\begin{description*}
+    \item [TK] Perl中图形界面的模块。    
+    \item [English]主要涉及一些特殊变量的命名问题，键入：perldoc English 或
+    		perldoc perlvar查看。例如：\\
+                \begin{tabular}{ll}
+                \$_ & \$ARG\\
+                @_ & @ARG\\
+    		\#\$! & \$OS_ERROR\\
+                \$\^~O & \$OSNAME\\
+                \$0 & \$PROGRAM_NAME\\
+            \end{tabular}
+    \item [CGI模块] Common Gateway Interface(公用网关接口)，Web编程时用到
+    
+    \item [Locale模块]允许进行基于语言的字符串比较。即本地化，perldoc  perllocale
+        \begin{lstlisting}[language=perl]
+        @x = sort @y;       # ASCII sorting order
+        {
+            use locale;
+            @x = sort @y;   # Locale-defined sorting order
+        }
+        @x = sort @y;       # ASCII sorting order again
+    \end{lstlisting} 
+ 		
+
+\end{description*}
+模块的名字区分大小写的。
+ 		
+ 		rem perl operator help online document.
+ 		perldoc perlop    
+    perldoc File::Basename
+    perldoc File::Find
+
+\section{代码片段}
+\subsection{管道}
+用程序的形式也可以象命令行一样打开和使用管道(ex: ls > tempfile )。如语句
+  	open (MYPIPE, "| cat >hello"); 
+打开一个管道，发送到MYPIPE的输出成为命令"cat >hello"的输入。由于cat命令将显示
+输入文件的内容，故该语句等价于
+		open(MYPIPE, ">hello"); 
+
+\begin{lstlisting}[language=perl, caption=用管道发送邮件]
+    open (MESSAGE, "| mail dave");
+    print MESSAGE ("Hi, Dave! Your Perl program sent this!\n");
+    close (MESSAGE);   
+\end{lstlisting}
+    
+	
+洗清输出 
+如果你希望 print() 的时候每个字符都要送到你指定的装置去，那你应自动清洗你的文
+件句柄，旧方法是： 
+use FileHandle; 
+DEV->autoflush(1); 
+比较新的方法是： 
+use IO::Handle; 
+DEV->autoflush(1); 
+你可以用 select() 和 \$| 变数来控制自动清洗的动作：
+\begin{lstlisting}[language=perl]
+    $oldh = select(DEV); 
+    $| = 1; 
+    select($oldh); 
+\end{lstlisting}
+你也可能看到不使用额外的暂存变数的写法，例如： 
+\begin{lstlisting}[language=perl]
+    select((select(DEV), $| = 1)[0]);
+\end{lstlisting}
+这方法对 Unix 和 Macintosh 间的socket输出/入没用。在这种情况下，你得把行末字
+符写死在程序代码中。 
+
+\subsection{对目录进行递归搜索}
+\begin{lstlisting}[language=perl]
+ use File::Find;
+find(\&handleFind, 'imac:documents:code');
+sub handleFind{
+    my $foundFile = $File::Find::name;
+    print "$foundFile\n" if ($foundFile =~ /\.html?$/i);
+}
+\end{lstlisting}
+你需要使用 perl 中的 File:Find 模块。当你加载了这个模块的时候，你就可以使用其
+中的 find 子函数，在调用这个函数的时候，需要带参数：第一个参数是一个函数的引
+用，这个函数由你自己建立，每次一个文件被找到的时候，它都会运行。接下来的一个参
+数是一串你想要搜索的路径。我写的这个示例脚本是运行在 Macintosh OS 8.x 系统上
+的，所以我使用了 Mac 系统的路径分隔符 ：。如果是在 Windows，你可以用反斜杠，
+如果是在 Unix 系统则是正斜杠。总之，find 函数将会在每次找到一个文件的时候调用
+你给出的子函数，而且会对子目录进行查找。在我的 handledfind 子函数中，我通过这
+个模块特定变量 \$File::Find::name 来获得每次 find 找到的文件名。然后，就可以对
+该文件执行任何你想的测试，在上面的例子中，我们输出有 .html 的扩展名文件名。
+
+\begin{lstlisting}[language=perl, caption=从一个文件的完全路径中找出它的名字]
+    use File::Basename;
+    $path = "/docs/sitecircus.com/html/tricks/trick.of.the.week.html";
+    $basename = basename($path, ".html");
+    print $basename;
+\end{lstlisting}
+
+\begin{lstlisting}[language=perl]
+    chdir "/etc" or die "cannot chdir to /etc: $!";
+    open(CURFILE, "$SrcFiles{$file}") || die "Can not open $file\n";
+\end{lstlisting}
+众所周知，or 和 || 是等效的。上面的语句可以看成是一个逻辑表示式，现执行前
+半部分的动作，如果返回的值为真，下半句就不用执行。跟C语言中的逻辑或运算效
+果一样的。 
+
+\subsection{关于Perl对中文的处理问题} 
+下面就以中文文本的处理为例进行说明（注意：编辑下面这段程序不能用使用utf8
+编码的编辑器），比如有一个字符串"测试文本"，我们想要把这个中文字符串拆成单个
+字符，可以这样写：
+\begin{lstlisting}[language=perl]
+use Encode;
+use Encode::CN; #可写可不写
+dat="测试文本";
+str=decode("gb2312",dat);
+@chars=split //,str;
+foreach char (@chars) {
+print encode("gb2312",char),"\n";
+}
+\end{lstlisting}
+结果大家试一试就知道了，应该是令人满意的。
+
+这里主要用到了Encode模块的decode、encode函数。要了解这两个函数的作用我们
+需要清楚几个概念：
+1、Perl字符串是使用utf8编码的，它由Unicode字符组成而不是单个字节，每个utf8编
+码的Unicode字符占1~4个字节（变长）。
+2、进入或离开Perl处理环境（比如输出到屏幕、读入和保存文件等等）时不是直接使用
+Perl字符串，而需要把Perl字符串转换成字节流，转换过程中使用何种编码方式完全取决
+于你（或者由Perl代劳）。一旦Perl字符串向字节流的编码完成，字符的概念就不存在了
+，变成了纯粹的字节组合，如何解释这些组合则是你自己的工作。
+
+我们可以看出如果想要Perl按照我们的字符概念来对待文本，文本数据就需要一直用
+Perl字符串的形式存放。但是我们平时写出的每个字符一般都被作为纯ASCII字符保存（
+包括在程序中明文写出的字符串），也就是字节流的形式，这里就需要encode和decode函
+数的帮助了。
+
+encode函数顾名思义是用来编码Perl字符串的。它将Perl字符串中的字符用指定的编
+码格式编码，最终转化为字节流的形式，因此和Perl处理环境之外的事物打交道经常需要
+它。其格式很简单：
+\lstinline{octets = encode(ENCODING, string [, CHECK])}
+这里string是Perl字符串，ENCODING是给定的编码方式，octets则是编码之后的字节流
+，CHECK表示转换时如何处理畸变字符（也就是Perl认不出来的字符）。一般不需要使用
+CHECK，让Perl按默认规则处理即可。
+编码方式视语言环境的不同有很大变化，默认可以识别utf8、ascii、ascii-ctrl、
+iso-8859-1等，中文环境（CN）增加了euc-cn（gb2312与之等价）、cp936（gbk与之等价
+）、hz等，还有日文环境（JP）、韩文（KR）等等，在此不一一尽数。
+
+decode函数则是用来解码字节流的。它按照你给出的编码格式解释给定的字节流，将
+其转化为使用utf8编码的Perl字符串，一般来说从终端或者文件取得的文本数据都应该用
+decode转换为Perl字符串的形式。它的格式为：
+\\\lstinline{string = decode(ENCODING, octets [, CHECK])}\\
+string、ENCODING、octets和CHECK的含义同上。
+
+现在就很容易理解上面写的那段程序了。因为字符串是用明文写出的，存放的时候已
+经是字节流形式，丧失了本来的意义，所以首先就要用decode函数将其转换为Perl字符串
+，由于汉字一般都用gb2312格式编码，这里decode也要使用gb2312编码格式。转换完成后
+Perl对待字符的行为就和我们一样了，平时对字符串进行操作的函数基本上都能正确对字
+符进行处理，除了那些本来就把字符串当成一堆字节的函数（如vec、pack、unpack等）。
+于是split就能把字符串切成单个字符了。最后由于在输出的时候不能直接使用utf8编码
+的字符串，还需要将切割后的字符用encode函数编码为gb2312格式的字节流，再用print
+输出。
+
+\chapter{JavaScript}
+\section{JavaScript 的历史}
+为了发挥 JavaScript 的全部潜力，了解它的本质、历史及局限性是十分重要的。
+本节为您讲解 JavaScript 和客户端脚本的起源。
+\subsection{Nombas 和 ScriptEase}
+
+大概在 1992 年，一家称作 Nombas 的公司开发了一种叫做 C 减减（C-minus-minus，简称 Cmm）的嵌入式脚本语言。Cmm 背后的理念很简单：一个足够强大可以替代宏操作（macro）的脚本语言，同时保持与 C （和 C ++）足够的相似性，以便开发人员能很快学会。这个脚本语言捆绑在一个叫做 CEnvi 的共享软件中，它首次向开发人员展示了这种语言的威力。
+
+Nombas 最终把 Cmm 的名字改成了 ScriptEase，原因是后面的部分（mm）听起来过于消极，同时字母 C “令人害怕”。
+
+现在 ScriptEase 已经成为了 Nombas 产品背后的主要驱动力。
+
+
+\subsection{Netscape 发明了 JavaScript}
+
+当 Netscape Navigator 崭露头角时，Nombas 开发了一个可以嵌入网页中的 CEnvi 的版本。这些早期的试验被称为 Espresso Page（浓咖啡般的页面），它们代表了第一个在万维网上使用的客户端语言。而 Nombas 丝毫没有料到它的理念将会成为万维网的一块重要基石。
+
+当网上冲浪越来越流行时，对于开发客户端脚本的需求也逐渐增大。此时，大部分因特网用户还仅仅通过 28.8 kbit/s 的调制解调器连接到网络，即便这时网页已经不断地变得更大和更复杂。而更加加剧用户痛苦的是，仅仅为了简单的表单有效性验证，就要与服务器进行多次地往返交互。设想一下，用户填完一个表单，点击提交按钮，等待了 30 秒的处理后，看到的却是一条告诉你忘记填写一个必要的字段。
+
+那时正处于技术革新最前沿的 Netscape，开始认真考虑开发一种客户端脚本语言来解决简单的处理问题。
+
+当时工作于 Netscape 的 Brendan Eich，开始着手为即将在 1995 年发行的 Netscape Navigator 2.0 开发一个称之为 LiveScript 的脚本语言，当时的目的是在浏览器和服务器（本来要叫它 LiveWire）端使用它。Netscape 与 Sun 及时完成 LiveScript 实现。
+
+就在 Netscape Navigator 2.0 即将正式发布前，Netscape 将其更名为 JavaScript，目的是为了利用 Java 这个因特网时髦词汇。Netscape 的赌注最终得到回报，JavaScript 从此变成了因特网的必备组件。
+
+
+\subsection{三足鼎立}
+
+因为 JavaScript 1.0 如此成功，Netscape 在 Netscape Navigator 3.0 中发布了 1.1 版。恰巧那个时候，微软决定进军浏览器，发布了 IE 3.0 并搭载了一个 JavaScript 的克隆版，叫做 JScript（这样命名是为了避免与 Netscape 潜在的许可纠纷）。微软步入 Web 浏览器领域的这重要一步虽然令其声名狼藉，但也成为 JavaScript 语言发展过程中的重要一步。
+
+在微软进入后，有 3 种不同的 JavaScript 版本同时存在：Netscape Navigator 3.0 中的 JavaScript、IE 中的 JScript 以及 CEnvi 中的 ScriptEase。与 C 和其他编程语言不同的是，JavaScript 并没有一个标准来统一其语法或特性，而这 3 中不同的版本恰恰突出了这个问题。随着业界担心的增加，这个语言的标准化显然已经势在必行。
+
+\subsection{标准化}
+
+1997 年，JavaScript 1.1 作为一个草案提交给欧洲计算机制造商协会（ECMA）。第 39 技术委员会（TC39）被委派来“标准化一个通用、跨平台、中立于厂商的脚本语言的语法和语义”(http://www.ecma-international.org/memento/TC39.htm)。由来自 Netscape、Sun、微软、Borland 和其他一些对脚本编程感兴趣的公司的程序员组成的 TC39 锤炼出了 ECMA-262，该标准定义了名为 ECMAScript 的全新脚本语言。
+
+在接下来的几年里，国际标准化组织及国际电工委员会（ISO/IEC）也采纳 ECMAScript 作为标准（ISO/IEC-16262）。从此，Web 浏览器就开始努力（虽然有着不同的程度的成功和失败）将 ECMAScript 作为 JavaScript 实现的基础。
+
+\chapter{英语}
+\begin{tabular}{ll}
+AFAIK & As Far As I Know\\
+AKA & Also Known As\\
+ASAP & As Soon As Possible\\
+BTW & By The Way (used to introduce some piece of information or question that is on a different topic but may be of interest)\\
+COLA & comp.os.linux.announce (newsgroup)\\
+ETA & Estimated Time of Arrival\\
+FAQ & Frequently Asked Question\\
+FUD & Fear, Uncertainty and Doubt\\
+FWIW & For What It's Worth\\
+FYI & For Your Information\\
+IANAL & I Am Not A Lawyer\\
+IIRC & If I Recall Correctly\\
+IMHO & In My Humble Opinion\\
+IMNSHO & In My Not-So-Humble Opinion\\
+IOW & In Other Words\\
+LART & Luser Attitude Readjustment Tool (quoting Al Viro: "Anything you use to forcibly implant the clue into the place where luser's head is")\\
+LUSER & pronounced "loser", a user who is considered to indeed be a loser (idiot, drongo, wanker, dim-wit, fool, etc.)\\
+OTOH & On The Other Hand\\
+PEBKAC & Problem Exists Between Keyboard And Chair\\
+ROTFL & Rolling On The Floor Laughing\\
+RSN & Real Soon Now\\
+RTFM & Read The Fucking Manual (original definition) or Read The Fine Manual (if you want to pretend to be polite)\\
+TANSTAAFL & There Ain't No Such Thing As A Free Lunch (contributed by David Niemi, quoting Robert Heinlein in his science fiction novel 'The Moon is a Harsh Mistress')\\
+THX & Thanks (thank you)\\
+TIA & Thanks In Advance\\
+WIP & Work In Progress\\
+WRT & With Respect To\\
+\end{tabular}
+
+
+    \end{document}

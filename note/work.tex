@@ -1,0 +1,2098 @@
+\documentclass{book}
+\usepackage{xcolor}
+\usepackage{verbatim}
+\usepackage{CJKutf8}
+\usepackage{ifthen}
+\usepackage{listings}%源代码宏包,such as C/C++ code
+\lstset{language=C++}%这条命令可以让LaTeX排版时将C++键字突出显示
+\lstset{breaklines}%这条命令可以让LaTeX自动将长的代码行换行排版
+\lstset{extendedchars=false}%这一条命令可以解决代码跨页时，章节标题，页眉等汉字不显示的问题
+\lstset{numbers=left,basicstyle=\small,
+numberstyle=\tiny,
+keywordstyle=\small\color{blue!70}, 
+commentstyle=\color{red!50!green!50!blue!50},
+frame=shadowbox,
+rulesepcolor=\color{red!20!green!20!blue!20}
+} 
+\usepackage[CJKbookmarks=true,unicode=true
+bookmarksnumbered=true,
+bookmarksopen=true,
+colorlinks=true,%
+pdfborder=001,
+citecolor=magenta,
+linkcolor=blue,
+linktocpage=true]{hyperref}%超链接, 以及书签
+\title{工作}
+\author{shecenon@gmail.com}
+\begin{document}
+\begin{CJK}{UTF8}{gbsn}
+    \ttfamily
+    \maketitle
+\CJKtilde
+/data/system/packages.xml is the information about the installed packages.  It is read and written by PackageManagerService.xml.  It is far more than just permissions.
+btrfs ZFS
+Bluetootheventloop.cpp
+
+emulator  power off
+emulator总是一启动就自动关机，可以通过修改BatteryService.java中的下面的参数来解决 
+\begin{lstlisting}[language=C]
+mBatteryStats.setOnBattery(mPlugType == BATTERY_PLUGGED_NONE, mBatteryLevel);
+intent.putExtra("level", mBatteryLevel);
+\end{lstlisting}
+将mBatteryLevel写成固定值为100，不让其为0
+
+\begin{verbatim}
+out/host/linux-x86/bin/aapt package  -M packages/apps/SpeechRecorder/AndroidManifest.xml \
+ -S packages/apps/SpeechRecorder/res    \
+  -F out/target/product/generic/obj/APPS/SpeechRecorder_intermediates/package.apk | tee trace.txt
+\end{verbatim}
+
+
+////////////////////////////////////////////////////////////
+“开始动画”  放在了 preamble 目录, “重复动画”  放在了 loop 目录.  
+
+desc.txt 是动画的描述
+1024 768 24
+p 1 0 preamble
+p 0 0 loop
+
+第一行, 长, 宽, 帧速
+第二行, p是固定的,  1 表示播放一次, 0 表示不停止, 播放下一部分,  preamble 是图片放的目录
+第三行, p是固定的,  0 表示播放循环播放, loop 是图片放的目录.
+
+preamble, loop 是任意的, 不过尽量使用英文.
+
+$ zip -0 bootanimation.zip loop/*png preamble/*.png desc.txt
+$ adb shell su
+#exit
+$ adb remount;adb push bootanimation.zip /system/media
+$ adb reboot
+
+////////////////////////////////////////////////////////////
+
+
+
+ Android UI design reference
+\begin{itemize}
+\item http://android-ui-utils.googlecode.com/hg/asset-studio/dist/icons-launcher.html
+\item \verb|http://xebee.xebia.in/2010/10/20/android-ui-development-tools/?utm_source=twitterfeed&utm_medium=twitter|
+\item http://android-ui-utils.googlecode.com/hg/asset-studio/dist/icons-tab.html
+\item http://android-ui-utils.googlecode.com/hg/asset-studio/dist/index.html
+\item http://www.droiddraw.org/androiddraw.html
+\item http://www.fluffyspider.com/
+\item http://code.google.com/p/android-ui-utils/
+\item http://www.smashingmagazine.com/2009/08/18/android-gui-psd-vector-kit/
+\item http://www.droiddraw.org/
+\item 
+\item \verb|http://androidappdocs.appspot.com/guide/practices/ui_guidelines/index.html|
+    \end{itemize}
+
+
+\iffalse
+
+	Killing apps in Android
+I am trying to implement some task manager like app in android. The problem is
+that I am able to kill the app process by calling Process.sendSignal(pid,9)
+but after that the screen of the app stays.
+
+
+==================================================================
+Re: iptables
+I got it!
+
+a crucial netfilter config was missing
+
+CONFIG_NETFILTER_XT_MATCH_OWNER=m
+
+Once that was in, everything worked like a charm!
+
+
+---->
+Is that because the linux kernel was not compiled with CONFIG_NETFILTER_XT_MATCH_OWNER option so that the netfilter cannot do anything with OWNER option ?
+<-----
+correct.
+that option should be configured, along with other extensions you may
+need.
+
+Intercepting all network access calls
+the iptables solution works perfectly.
+Just so that this may help someone in the future.
+
+
+When I enable -Xjitverbose, I see that traces along with the assembly
+generated gets printed. To my surprise I also see that same traces are
+compiled by the JIT compiler and a duplicate code copy is installed in
+code cache at multiple locations.
+
+My question is does/does not the JIT compiler check if a particular
+trace is compiled before compiling it ? If it does check, why do I see
+duplicate codes in the verbose mode ? And also where does it check ?
+===========================JIT==========================================
+FROM TOPICS JIT enabling for armv5te
+you can get from dalvkit/vm
+
+
+ifeq ($(TARGET_ARCH_VARIANT),armv5te)
+    WITH_JIT := false
+endif
+Although we monitored the JIT resource consumption closely, it still adds one compiler thread and a couple hundred KBs of code cache to each process, which might be a burden to lower-end devices. Since the CPU frequency for v5te cores and RAM amount vary from platform to platform, we decided to disable the JIT for v5te by default in the makefile, but platform developers can easily enable it once the underlying system is measured to be fast enough. 
+Glad you mentioned the device boot time. The Dalvik VM uses the interpreter to make forward progress unless frequently executed code traces are detected, and the JIT will only help the performance if the majority cycles are spent in the VM interpreter. The boot process happens to execute code from a relatively large footprint with low repeat rates, and less than 30% of the cycles are in the VM to begin with, so "exactly the same time" is the expected behavior.
+
+
+The transition from the interpreter to the JIT compiler can be tuned via the parameters in the ArchVariant.c file under dalvik/vm/compiler/codegen/arm/<arch>. For example, currently armv5te says:
+
+
+    gDvmJit.threshold = 200;
+    gDvmJit.codeCacheSize = 512*1024;
+
+
+That is, only traces that are executed more than 200 times before are considered JIT-worthy, and the upper-bound for the code cache size for each process is 512K. If the underlying CPU is not fast enough and the threshold is set too low, the device may feel sluggish since the compiler threshold is using the CPU more often. Also if RAM is not abundant on the device while the code cache size is too big, the overall system performance may degrade due to memory contentions. The sweet-spot setting for different devices (especially for lower-end ones) varies and some benchmarking effort is probably required.
+
+
+That said, for CPU intensive workloads both the v5te and v7 JIT will provide significant speedups over the base line, but the actual ratio varies case by case and you can look at our I/O presentation on how to use profiling tools to find out  the expected behavior. Lower-end devices are more sensitive to the JIT parameters and may require individual tuning, so the JIT is disabled by default for the v5te target.
+====================================================================================
+
+Event dispatching is implemented in Java code, and received by the application in ViewRoot.  And yes, as I've said, you can just use JNI to execute some native code.  That native code can do whatever native code can do.  You can call your kernel module or whatever at that point.
+
+
+installPackage()
+PackageManagerService.grantPermissionsLP()
+checkPermission() is basically the implementation of checkCallingOrSelfPermission().
+
+These are defined in /system/etc/permissions/framework.xml (or any other file in the directory).
+The only way to temporarily remove a uid from a gid is by changing the framework to allow you to remove a permission from an app, and kill any processes running under its uid.
+
+Each package in there has a HashSet of permissions.  If you search through the file for the permission structures, you will find them.
+
+
+ActivityManagerService
+|
+|_enforceCallingPermission() -> checkCallingPermission() ->
+CheckPermission -> CheckComponentPermission -> PAckageManagerService
+ 
+|                                                                 |
+ 
+|                                                                 |_
+checkUidPermission()
+ 
+|
+ContextImpl.java = checkCallingPermission() -> checkPermission () _|
+
+the checkUidPermission of the Package Manager has a Settings object =
+HashMap<Name, PackageSetting>
+PackageSetting has a "grantedPermissions" member which is a HashSet
+and also a gids[] array.
+
+
+
+"The Maestro’s two virtual serial ports can be used in Linux without
+any special driver installation. The virtual serial ports are managed
+by the cdc-acm kernel module, whose source code you can find in your
+kernel’s source code drivers/usb/class/cdc-acm.c. When you connect the
+Maestro to the PC, the two virtual serial ports should appear as
+devices with names like /dev/ttyACM0 and /dev/ttyACM1 (the number
+depends on how many other ACM devices you have plugged in). The port
+with the lower number should be the Command Port, while the port with
+the higher number should be the TTL Serial Port. You can use any
+terminal program (such as kermit) to send and receive bytes on those
+ports."
+
+
+"putting your module in /system/lib/modules/ then insmod " is working fine but I am asking how to put in the ROM image so that I don't need to push the .ko file to /system/lib/modules
+
+all java process all cloned from zygote ,
+
+
+
+
+
+
+**********************************************************************************
+I tried to do a build of all required images (make -j4) with the
+        kernel having been built based on android-msm-2.6.32, to be
+        installed on a Nexus One, and I'm getting:
+        
+        error: out/target/product/passion/boot.img is too large (2439168 >
+        [2703360 - 270336])
+
+Open BoardConfig.mk file. Change partition size.
+If you don't have below contents then insert this.
+
+
+NEED to CHANGE PARTITION_SIZE !!!
+=====================================================
+
+
+BOARD_BOOTIMAGE_PARTITION_SIZE := 0x00500000
+BOARD_RECOVERYIMAGE_PARTITION_SIZE := 0x00500000
+BOARD_SYSTEMIMAGE_PARTITION_SIZE := 0x06900000
+BOARD_USERDATAIMAGE_PARTITION_SIZE := 0x05000000
+BOARD_FLASH_BLOCK_SIZE := $(BOARD_NAND_PAGE_SIZE) * 64
+********************************************************************************
+repo init; repo sync; lunch generic-eng; make; emulator
+
+gives an engineering build.  Looking at the Config.java that is
+generated, it seems to set the value as DEBUG = false; RELEASE =
+false; in the build area.
+
+Is the android.util.Config.Debug meant to be false in "eng" build ?
+Shouldn't eng builds have logs turned on?
+
+Looks like this is caused by the two seemingly conflicting variables,
+TARGET_BUILD_VARIANT=eng and the TARGET_BUILD_TYPE=release, on the
+default configuration.  What does it mean to say eng-release build?
+
+http://android.git.kernel.org/?p=platform/build.git;a=blob_plain;f=core/build-system.html;hb=HEAD
+does not have much details on these variables.
+
+
+
+frameworks/base/tools/aapt/Android.mk
+frameworks/base/tools/aapt/instrument.c
+build/core/definitions.mk
+build/core/config.mk
+build/core/combo/HOST_linux-x86.mk
+build/core/combo/select.mk
+
+frameworks/base/cmds/bootanimation/BootAnimation.cpp
+
+以前的????
+frameworks/base/libs/surfaceflinger/BootAnimation.cpp
+
+frameworks/base/cmds/bootanimation/BootAnimation.h
+frameworks/base/cmds/bootanimation/BootAnimation.cpp
+frameworks/base/core/res/assets/image/android-logo-shine.png
+frameworks/base/core/res/assets/image/android-logo-mask.png
+
+KGDB 跟架构有关，代码是 kgdb.c
+如 arch/arm/kernel/kgdb.c
+   arch/x86/kernel/kgdb.c
+KDB
+kernel/debug/kdb/kdb_main.c    汇编级调试
+
+内核
+init/do_mounts.c
+init/do_mounts_md.c
+init/do_mounts_initrd.c
+init/initramfs.c
+usr/initramfs_data.s
+usr/gen_init_cpio.c
+
+
+内核启动时的logo
+drivers/video/logo/*.ppm
+
+
+system/core/include/cutils/atomic.h
+
+system/core/init/parser.c
+是 init 启动脚本的解析器，如 /init.rc  /init.${hardware}.rc
+(如/init.goldfish.rc)
+其语法参见：
+system/core/init/readme.txt
+
+system/core/init/init.c
+main 函数 寻找 目标文件系统中的文件 /init.logo.rel
+load_565rle_image(INIT_IMAGE_FILE)
+system/core/init/init.h
+#define INIT_IMAGE_FILE	"/initlogo.rle"
+
+如果装载logo失败，则向/dev/tty0打印 "             A N D R O I D "字符串。
+
+
+
+dalvik\vm\analysis/CodeVerify.c
+
+libcore/dalvik/src/main/java/dalvik/system
+
+文件系统操作监控, 对 inotify 的封装。
+frameworks/base/core/java/android/os/FileObserver.java
+frameworks/base/core/jni/android_util_FileObserver.cpp
+
+libdvm   library dalvik virtual machine
+dalvik/vm/Android.mk
+
+===begin
+> I think the portable interpreter is not the one being used by the
+> emulator.
+
+By default, the "fast" interpreter is used, and (in >= froyo) the JIT
+is enabled.
+
+You can provide "-Xint:portable" on the command line, or "setprop
+dalvik.vm.execution-mode int:portable" to change the way the
+interpreter used by the Android app framework (the latter requires
+root, and you must stop/start the framework after changing the
+property).
+
+You could also just modify dvmLockObject(), which is where most of the
+interesting stuff happens, though that won't get called if the JIT is
+inlining thin lock activity (in which case you still need to specify
+the portable interpreter).
+===end
+
+onSaveInstanceState(Bundle) is not called
+Think of the bundle in onSaveInstanceState as a place to put data that would be needed to recreate an activity. As it turns out, activities are destroyed and recreated quite frequently -- even when you might not expect it, but an activity is only 'finished' once. 
+
+One example of this is when the phone is rotated. At this time, the activity is destroyed and then a new one is created. Android will give you an opportunity to save data from the activity to pass to this new instance. This same sort of behavior happens when the system is running low on memory. Imagine you have four activities on the history stack: A -> B -> C -> D. Maybe by the time you hit activity D, the system's running low on memory. At this point, dalvik might destroy A, calling onSaveInstanceState on it. If you hit back from D, then to C, then to B, then to A again, it will recreate the activity from the data you stored in the bundle. 
+
+In contrast, an activity is 'finished' when it will never be reshown. For example, if the user hits the back button from that activity.
+
+============================
+Thanks, very helpful.
+
+So, if activity is actually finish, then we need to save the information in the SD Card before it destroyed in order to use that information in the future when application is started again,right ?
+
+Is there any conventional way for saving application data in the SD , where to place the file,which file type(xml,etc)?
+
+
+SharedPreference!!
+
+
+Re: JIT performance through checkers
+According to the author of the game they represent the following meanings: 
+
+v : evaluation value of position after search
+d : total depth of search tree (using iterative deepening from d=1 up, stops when out of time)
+n : number of nodes in the search tree 
+
+We treat 'n' as the benchmark score.
+
+
+
+
+
+Indeed, the Settings app is very much a "platform-only" app that uses
+non-public APIs and therefore cannot be built outside of the entire
+Android source tree.
+
+
+
+frameworks/base/core/jni/android_ddm_DdmHandleNativeHeap.cpp
+dalvik/vm/alloc/HeapWorker.c
+
+libcore/luni-kernel/src/main/java/java/lang/Runtime.java
+freeMemory， maxMemory， totalMemory
+traceMethodCalls =》 VMDebug.stopMethodTracing();/VMDebug.startMethodTracing();
+
+libcore/luni-kernel/src/main/java/java/lang/System.java
+
+                // Trigger a gc to try to clean up after the stuff is done, since the
+                // renderscript allocations aren't charged to the java heap.
+                mHandler.post(new Runnable() {
+                        public void run() {
+                            System.gc();
+                        }
+                    });
+
+System.loadLibrary
+System.setProperty("qwerty", "1");
+
+libcore/dalvik/src/main/java/dalvik/system/VMRuntime.java
+在 Application 或 Activity 创建时设置：
+      VMRuntime.getRuntime().setMinimumHeapSize(4 * 1024 * 1024);
+dvmAttachCurrentThread in Thread.c
+startJitCompilation
+gdbjithelper
+
+frameworks/base/core/java/android/os/Debug.java
+frameworks/base/core/java/android/os/Build.java    //有关编译时的信息。
+
+dalvik/dalvikvm/main.c
+dalvik/vm/jdwp/*,   如 Debugger.c
+JDWP: Java Debug Wire Protol
+dalvik/vm/Interp.c    Breakpoint, BreakpointSet
+dalvik/docs/debugger.html
+/home/leo/android/platform/development/tools/jdwpspy
+
+libcore/dalvik/src/main/java/dalvik/system/Zygote.java
+
+frameworks/base/core/jni/android_media_ToneGenerator.cpp
+
+在android中，屏幕(framebuffer)被看成为一个device，文件/sys/power/wait_for_fb_sleep和 /sys/power/wait_for_fb_wakeup被kernel用来通知framework屏幕挂起或恢复了。在framework中有两个线程，一个是画图的主线程，在循环中它会首先检查kernel的事件通知信号并设置framebuffer是否可画，下面是示意性的framework代码：
+
+1 . surface flinger thread:    
+while ( true ) {    
+    checkEventAndSendSignal();    
+    doSomeThing();    
+     if  (canDraw) {    
+        swapBuffer();    
+    }    
+}    
+2 .check event function    
+checkEventAndSendSignal() {    
+     if  (wait_for_sleep  returned) {    
+        canDraw =  false ;    
+        mBarrier.open();    
+    }    
+     if  (wait_for_wakeup returned) {    
+        canDraw =  true ;    
+    }    
+}    
+3 .drawing function    
+swapBuffer() {    
+    .....    
+    ioctl(egl_native_window_t::fd, FBIOPUT_VSCREENINFO, &mInfo)    
+     ....    
+}    
+4 .getEvent thread    
+while ( true ) {    
+    wait_for_sleep();    
+    sendSleepReturnEvent();    
+    mBarrier.wait();    
+   wait_for_wakeup();    
+  sendWakeupReturnEvent();    
+}   
+当屏幕可用时，kernel会block getEvent线程在wait_for_sleep(read(wait_for_fb_sleep file))调用上，直到屏幕不可用(用户关闭屏幕，变黑)；当屏幕不可用（挂起），kernel会block getEvent线程在wait_for_wakeup(read(wait_for_fb_wakeup file))调用上，直到屏幕可用。
+
+在挂起屏幕前（wait_for_wakeup）mBarrier用来同步surfaceflinger线程画完上次循环未完成的framebuffer
+
+frameworks/base/core/jni/android_view_Surface.cpp, android_view_Display.cpp
+surfaceflinger/SurfaceComposerClient.h
+frameworks/base/libs/surfaceflinger/*
+                     surfaceflinger_client/*
+
+
+sdk/eclipse/plugins/com.android.ide.eclipse.adt/src/com/android/ide/eclipse/adt/internal/launch/AndroidLaunchController.java:978:        String message = String.format("Installing %1$s...", launchInfo.getPackageFile().getName());
+sdk/eclipse/plugins/com.android.ide.eclipse.adt/src/com/android/ide/eclipse/adt/internal/launch/AndroidLaunchController.java:1541:                                "Attempting to connect debugger to '%1$s' on port %2$d",
+
+[2010-08-16 13:50:52 - EX03_01] Refreshing resource folders.
+[2010-08-16 13:50:52 - EX03_01] Starting incremental Pre Compiler: Checking resource changes.
+[2010-08-16 13:50:52 - EX03_01] Nothing to pre compile!
+[2010-08-16 13:50:52 - EX03_01] Starting incremental Package build: Checking resource changes.
+[2010-08-16 13:50:53 - EX03_02] Refreshing resource folders.
+[2010-08-16 13:50:53 - EX03_02] Starting incremental Pre Compiler: Checking resource changes.
+[2010-08-16 13:50:53 - EX03_02] Nothing to pre compile!
+[2010-08-16 13:50:53 - EX03_02] Starting incremental Package build: Checking resource changes.
+[2010-08-16 13:50:53 - EX07_04] Refreshing resource folders.
+[2010-08-16 13:50:53 - EX07_04] Starting incremental Pre Compiler: Checking resource changes.
+[2010-08-16 13:50:53 - EX07_04] Nothing to pre compile!
+[2010-08-16 13:50:53 - EX07_04] Starting incremental Package build: Checking resource changes.
+[2010-08-16 13:50:59 - EX07_04] ------------------------------
+[2010-08-16 13:50:59 - EX07_04] Android Launch!
+[2010-08-16 13:50:59 - EX07_04] adb is running normally.
+[2010-08-16 13:50:59 - EX07_04] Performing irdc.EX07_04.EX07_04 activity launch
+[2010-08-16 13:50:59 - EX07_04] Automatic Target Mode: launching new emulator with compatible AVD 'sd'
+[2010-08-16 13:50:59 - EX07_04] Launching a new emulator with Virtual Device 'sd'
+[2010-08-16 13:51:00 - Emulator] emulator: WARNING: ignoring non-existing SD Card image
+[2010-08-16 13:51:01 - EX07_04] New emulator found: emulator-5554
+[2010-08-16 13:51:01 - EX07_04] Waiting for HOME ('android.process.acore') to be launched...
+[2010-08-16 13:52:22 - EX07_04] WARNING: Application does not specify an API level requirement!
+[2010-08-16 13:52:22 - EX07_04] Device API version is 8 (Android 2.2)
+[2010-08-16 13:52:22 - EX07_04] HOME is up on device 'emulator-5554'
+[2010-08-16 13:52:22 - EX07_04] Uploading EX07_04.apk onto device 'emulator-5554'
+[2010-08-16 13:52:22 - EX07_04] Installing EX07_04.apk...
+[2010-08-16 13:53:23 - EX07_04] Success!
+[2010-08-16 13:53:24 - EX07_04] Starting activity irdc.EX07_04.EX07_04 on device 
+[2010-08-16 13:53:26 - EX07_04] ActivityManager: Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=irdc.EX07_04/.EX07_04 }
+[2010-08-16 13:53:27 - EX07_04] Attempting to connect debugger to 'irdc.EX07_04' on port 8631
+[2010-08-16 14:38:39 - EX07_04] ------------------------------
+[2010-08-16 14:38:39 - EX07_04] Android Launch!
+[2010-08-16 14:38:39 - EX07_04] adb is running normally.
+[2010-08-16 14:38:39 - EX07_04] Performing irdc.EX07_04.EX07_04 activity launch
+[2010-08-16 14:38:39 - EX07_04] Automatic Target Mode: Preferred AVD 'oem' is available on emulator 'emulator-5554'
+[2010-08-16 14:38:39 - EX07_04] WARNING: Application does not specify an API level requirement!
+[2010-08-16 14:38:39 - EX07_04] Device API version is 8 (Android 2.2)
+[2010-08-16 14:38:41 - EX07_04] Application already deployed. No need to reinstall.
+[2010-08-16 14:38:41 - EX07_04] Starting activity irdc.EX07_04.EX07_04 on device 
+[2010-08-16 14:38:43 - EX07_04] ActivityManager: Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=irdc.EX07_04/.EX07_04 }
+[2010-08-16 14:38:45 - EX07_04] Attempting to connect debugger to 'irdc.EX07_04' on port 8631
+
+
+
+启动时的堆栈
+EX07_04 [Android Application]	
+	DalvikVM[localhost:8631]	
+		线程组 [system]	
+			守护程序系统线程 [<3> Signal Catcher]（正在运行）	
+			守护程序系统线程 [<2> HeapWorker]（正在运行）	
+			线程组 [main]	
+				线程 [<1> main]（已暂挂（断点位于 irdc.EX07_04.EX07_04 中的第 36 行）	
+					<VM 不提供监视信息>	
+					irdc.EX07_04.EX07_04.onCreate(android.os.Bundle) 行： 36	
+					android.app.Instrumentation.callActivityOnCreate(android.app.Activity, android.os.Bundle) 行： 1047	
+					android.app.ActivityThread.performLaunchActivity(android.app.ActivityThread$ActivityRecord, android.content.Intent) 行： 2627	
+					android.app.ActivityThread.handleLaunchActivity(android.app.ActivityThread$ActivityRecord, android.content.Intent) 行： 2679	
+					android.app.ActivityThread.access$2300(android.app.ActivityThread, android.app.ActivityThread$ActivityRecord, android.content.Intent) 行： 125	
+					android.app.ActivityThread$H.handleMessage(android.os.Message) 行： 2033	
+					android.app.ActivityThread$H(android.os.Handler).dispatchMessage(android.os.Message) 行： 99	
+					android.os.Looper.loop() 行： 123	
+					android.app.ActivityThread.main(java.lang.String[]) 行： 4627	
+					java.lang.reflect.Method.invokeNative(java.lang.Object, java.lang.Object[], java.lang.Class, java.lang.Class[], java.lang.Class, int, boolean) 行： 不可用 [本机方法]	
+					java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object...) 行： 521	
+					com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run() 行： 868	
+					com.android.internal.os.ZygoteInit.main(java.lang.String[]) 行： 626	
+					dalvik.system.NativeStart.main(java.lang.String[]) 行： 不可用 [本机方法]	
+				线程 [<6> Binder Thread #2]（正在运行）	
+				线程 [<5> Binder Thread #1]（正在运行）	
+
+
+
+
+leo@leo-desktop:~/android_2.1_20100506/android/frameworks$ find . -name ActivityManager*
+./base/include/android_runtime/ActivityManager.h
+./base/services/java/com/android/server/am/ActivityManagerService.java
+./base/core/jni/ActivityManager.cpp
+./base/core/tests/coretests/src/android/app/activity/ActivityManagerTest.java
+./base/core/java/android/app/ActivityManagerNative.java
+./base/core/java/android/app/ActivityManager.java
+./base/tests/permission/src/com/android/framework/permission/tests/ActivityManagerPermissionTests.java
+
+
+../build/tools/atree/atree.cpp:34:"                 of files included.  It sets the variable ATREE_FILES.\n"
+../build/tools/atree/atree.cpp:285:            fprintf(f, "ATREE_FILES := $(ATREE_FILES) \\\n");
+../build/core/Makefile:1178:ATREE_FILES :=
+../build/core/Makefile:1182:ifeq ($(strip $(ATREE_FILES)),)
+../build/core/Makefile:1183:ATREE_FILES := \
+../build/core/Makefile:1210:	$(ATREE_FILES) \
+../out/host/linux-x86/sdk/sdk_deps.mk:1:ATREE_FILES := $(ATREE_FILES) \
+
+
+# makefile (¿?'build/core/Makefile'¿?¿? 1179)
+ATREE_FILES :=  out/target/product/generic/system/usr/share/zoneinfo/zoneinfo.dat 
+out/target/product/generic/system/usr/share/zoneinfo/zoneinfo.idx 
+out/target/product/generic/system/usr/share/zoneinfo/zoneinfo.version 
+out/target/product/generic/system/etc/security/cacerts.bks 
+out/target/product/generic/system/usr/ke
+
+
+
+
+
+
+
+
+frameworks/base/core/java/android/content/Intent.java      parseUri 
+
+
+ANDROID_RESOURCES 
+
+anim、array、attr、id、color、dimen、drawable、integer、layout、string
+
+
+XLIFF: 全称 XML Localisation Interchange File Format, XML 本地化交换文件格式 
+
+<resource xmlns:xliff="urn:aasis:names:tc:xliff:document:1.2">    
+... 
+  <string name="text_format"><xliff:g id="prefix"></xliff:g></string> 
+... 
+</resource> 
+
+strings.xml 
+
+
+切换系统本地化语言
+Resources   resources = getResources();
+Configure     config = resources.getConfiguration();
+DisplayMetrics dm = resources.getDisplayMetrics();
+
+config.locale = Locale.SIMPLIFIED_CHINESE;
+resources.updateConfiguration(config, dm);
+
+
+#setprop persist.sys.language zh;setprop persist.sys.country CN;stop;sleep
+5;start
+#echo zh-CN >/data/locale;stop;sleep 5;start
+
+./libcore/xml/src/main/java/org/apache/xml/serializer/Encodings.properties
+
+
+{@link #Favorite_y irdc.EX07_04:y}
+
+
+问题小结
+1. activity 启动失败
+AndroidManifest.xml 里没有声明标记 activity
+
+2. View layout 时 Widget 不全
+比如，在 LinearLayout 里 TextView 和 Spinner 各放一个，结果只画出了一个。
+原因是，LinearLayout 的属性 android:orientation 没有定义。
+
+3. findViewById 获取资源失败
+findViewById 一定要放在 setContentView 之后，否则获取的只是空指针。
+
+4. CursorAdaptor 不起作用
+传给 CursorAdapter 的 Cursor 结果集中必须包含有名为 "_id" 的列。
+
+5. ContentProvider 中，单一数据的 MIME 类型 "vnd.android.cursor.item/"
+数据集的 MIME 类型为 "vnd.android.cursor.dir/"
+UriMatcher 的方法 addURI 中第二个参数的匹配路径 "#"代表？？？
+
+6. 
+   try{
+                final String SERVERURL = "http://www.google.com";//"http://hq.sinajs.cn/list=sz000936";
+                URL inquiryurl = new URL(SERVERURL);
+
+                URLConnection conn = inquiryurl.openConnection();/*openConnection throw IOException*/
+                Log.d(TAG, "step 1");
+                conn.connect();
+                Log.d(TAG, "step 2");
+                InputStream is = conn.getInputStream();
+                Log.d(TAG, "data is:"+is.toString());
+                BufferedInputStream bis = new BufferedInputStream(is);
+
+                bis.close();
+                is.close();
+                }catch(Exception e){
+                    if (e instanceof MalformedURLException){
+                    Log.d(TAG, "throw MalformedURLException!!!");
+                    }
+                    else if(e instanceof IOException){
+                        Log.d(TAG, "throw IOException!!!");
+                    }
+                }
+网络的问题 ， 代码放在 try块中，因为 URLConnection的方法 openConnection会抛出
+IOException，而URL的构造函数会抛出MalformedURLException异常。
+如果程序没有android.permission.INTERNET权限，IOException就会抛出。
+D/SntpClient(   61): request time failed: java.net.SocketException: Address family not supported by protocol
+
+
+
+还要其他的，比如动画中的 scaler、alpha，应用Launcher 的launcherProvider等不太常见的tag。可见，XML 无处不入。
+
+getConfiguredNetworks
+
+am start -n com.android.music/.StreamStarter -d /sdcard/music.wav
+
+frameworks/base/tools/aapt/resource.cpp    isValidResourceType
+
+TypedValue.java      coerceToString   @ ? 0x #
+
+XML 中一些度量单位的含义：
+px   ： rawpixel
+dip   ：Device Independent Pixel
+sp    ：Scale Pixel
+pt    ：point
+in    ：inches
+mm   ：millimeters
+In most cases, you can take advantage of density independence in your application simply by making sure that your layouts specify all dimension values in density-independent pixels (dip or dp) or scale-independent pixels (sip or sp, for text only). If you are using absolute pixel values in the application and manifest includes android:anyDensity="true", you will also need to scale the pixel values.
+
+parse_unit      unitNames      解析表示计量单位的资源
+
+TypedValue 是动态类型化数据值的容器，主要是用于 android.content.res.Resources 类中保持资源数值。
+
+TypedArray 是Resources.Theme的方法obtainStyledAttributes(AttributeSet, int[], int, int) ，或Resources 的方法obtainAttributes 从资源中取出的一组数值的容器。
+obtainStyledAttributes
+
+
+
+
+ant : 打包 apk 文件
+acp : 类似 cp 的文件拷贝工具， Android cp。
+atree: 把多个不同目录下的文件树，有组织的拷贝到一个目录下。
+aapt: Android Asset Packaging Tool，创建、查看、更新 zip 格式兼容的文档（.zip, .jar, .apk），例如，把资源文件编译成二进制资源包， 并生成R.java 和 Manifest.java。
+dx:  把 Java 字节码转换为 Dalvik 可执行的字节码，即把.class 文件转换为 .dex （Dalvik EXecuteable format）文件
+zipalign
+
+>I'm working on the Froyo codebase and trying to enable the dexpreopt
+> in build system. However, I am curious what the benefits of enabling
+> dexpreopt. It seems to me that that will definitely improve the first
+> time boot up speed. Will it improve the speed of second boot? Will it
+> improve the performance of the apk?
+>
+
+WITH_DEXPREOPT=true 
+Make sure DISABLE_DEXPREOPT is not defined in your environment.
+(Note that DISABLE_DEXPREOPT is defined in build/envsetup.sh). 
+-it reduces the overall flash usage by stripping the original dex data
+from the apks.
+
+-most importantly, it guarantees that system upgrades will install
+regardless of how full the data partition is (without that, it's
+possible for a system upgrade to make a device unbootable unless doing
+a factory reset).
+
+prebuild
+
+
+
+
+
+
+Actually bionic is not a part of Android Linux Kernel, but a replacement of
+glic which is used in normal Linux.
+The differences between Android Kernel and mainstream kernel are:
+1. binder: used for IPC
+2. Ashmem: Anonymous shared memory, used for inter-process communication
+3. pmem: used for shared memory as well
+4. power management: introduce wake lock into PM, which is more aggressive
+5. logger: made a new logger for Android debug info output
+6. yaffs2: integrated yaffs2 filesystem into Kernel which is not in
+mainstream kernel
+7.framebuffer: Android needs dual-buffer 
+
+SystemServer.FACTORY_TEST_OFF)
+
+每启动一个新的应用或者Service， ActivityManangerService都将为该进程创建一个ApplicationThread客户端，当有其他应用需要创建新的 Activity或者Bind Service时，system service 就会通过binder IPC 机制通知到相应的application。一旦Application在ActivityManangerService中创建了客户端，则客户端与客户端，客户端与Server的IPC连接都建立 了，在Binder IPC通信中已经说了，对于需要IPC通信的两个不同进程，只要获得了对方在Binder Kernel中建立的Binder参考，就可以互相传递数据 了。应用由system service进程启动，具体过程可以参考下面的示意图，这里就不贴源码分析了。
+
+The trick was that you have to use port 29418, not 22, when
+connecting.
+
+There are sshd:s running on both ports, but only the one on port 29418
+allows
+Gerrit users to login.
+
+
+If you are talking about *android* applications, the decision to start and end them doesn't happen in Dalvik.  ActivityManagerService is the one that decides when to start *processes* (not that "application" is a concept is extremely fuzzy on Android), and usually it is the out of memory killer that decides when they go away through a brutal SIGKILL to the process (though sometimes ActivityManagerService will do this itself). 
+
+So if you want to keep track of apps, you will need to work in those constraints.  And this includes the fact that *nothing* inside of the process knows when that process is going away or has any chance to run at that point; in fact nothing in *user-space* typically does. 
+
+Now, again, what we are talking about is *processes* which is really not the same as an application.  A process on Android is just a container in which to run some code; it is not directly tied to an application as perceived by the user.  For example, when the user "launches" the contacts app, often it is actually just loading and running code in a process called "acore" that also runs many other things (in some devices Launcher, search services, etc) and thus has no relation to the time spent in the "contacts" app. 
+
+
+
+
+
+Just follow the code from ContextImpl.startActivity() -> ActivityMangerService.startActivity; in ActivityManagerService there is a bunch of work to maintain the activity stack and keep the top activity in the stack resumed as described by the activity lifecycle documentation in the SDK.  This is done by performing calls on IApplicationThread, which is implemented by ActivityThread to receive commands from the activity manager and execute them.
+
+
+ActivityManagerNative is not really interesting.  It is just the marshalling side of the IPC interface with the activity manager.
+
+
+I would strongly recommend when exploring the code to load it up in to Eclipse.  Being able to use Command-G (to find implementations of a symbol) and Shift-Command-G (to find references to a symbol) make it a lot easier to follow calls across the code.
+
+
+Activity 和 Application
+
+一般接触了 Android 就知道， 我们要在 AndroidManifest.xml
+定义activity标记，并且其 android:name 的属性值是 Java
+代码中要实现的类名，这个类是 Activity 派生类。 其实，application
+标记也是可以设置 android:name 属性的，如果设了，则类似 activity，必须在 Java
+代码里实现一个 Application 类，类名就是这个属性的值。不过一般 application
+标记不设 android:name 属性， 也就是一般我们是了 Android Framworks 中的
+Application 类; 而 activity 标记，恰恰相反，一般都设置属性
+android:name，实现 Activity 的派生类。 这个不难理解，我们需要修改默认类的行为，就在 AndroidManifest.xml
+定义 android:name，并在代码里实现。 Launcher 的 AndroidManifest.xml 就设置了
+application 的 android:name 属性。
+
+Context
+是处理应用程序环境全局信息的接口，用它可以访问应用相关的资源和类，以及
+调用应用级操作，如投放 activities， broadcasting， receiving intents ，等等。
+
+Activity
+Context.startActivity
+Activity.startActivityForResult
+Activity.setResult
+
+Context.registerReceiver
+Context.unregisterReceiver
+
+Context.startService
+Context.bindService
+Context.stopService
+Context.unbindService
+
+Context.sendBroadcast
+Context.sendOrderedBroadcast
+Context.sendStickyBroadcast
+
+registerDefaultProviders
+
+
+AndroidManifest.xml 的 package 必须和 Java 代码里的 package 一致。
+
+控制反转 (IoC)就是Inversion of Control。在Java开发中，IoC意味着将你设计好的类交给系统去控制，而不是在你的类内部控制。这称为控制反转。
+不创建对象，但是描述创建它们的方式。在代码中不直接与对象和服务连接，但在配置文件中描述哪一个组件需要哪一项服务。容器负责将这些联系在一起。其原理是基于OO设计原则的The Hollywood Principle：Don't call us,we'll call you（别找我，我会来找你的）。也就是说，所有的组件都是被动的（Passive），所有的组件初始化和调用都由容器负责。组件处在一个容器当中，由容器负责管理。简单的来讲，就是由容器控制程序之间的关系，而非传统实现中，由程序代码直接操控。这也就是所谓“控制反转”的概念所在：控制权由应用代码中转到了外部容器，控制权的转移，这就是反转。
+
+
+
+<?xml version="1.0" encoding="utf-8"?>
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="irdc.ex03_10"
+      android:versionCode="1"
+      android:versionName="1.0.0">
+    <application android:icon="@drawable/icon" android:label="@string/app_name">
+      <activity android:name=".EX03_10"
+                android:label="@string/app_name">
+        <intent-filter>
+          <action android:name="android.intent.action.MAIN" />
+          <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+      </activity>
+      <activity android:name="EX03_10_1"></activity>
+    </application>
+  </manifest> 
+
+
+libhardware/modules/gralloc/framebuffer.cpp
+/hardware/libhardware/modules/gralloc/framebuffer.cpp
+
+unlockCanvas
+/dev/fb0, /dev/graphics/fb0
+FBIOGET_FSCREENINFO , FBIOGET_VSCREENINFO
+.fb_pan_display
+http://www.netmite.com/android/mydroid/development/pdk/docs/display_drivers.html
+
+  //change to landscape mode
+ 
+setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+//To change to portrait mode
+setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
+Or You can also used directly in manifest file inside activity as
+ android:screenOrientation="landscape"
+
+
+I found out the problem was in Avrcp.kl , Its file my system is using for scancode -keycode generation.
+I added following in avrcp.kl after i found that 164,128 and 159  has no entry at all:
+
+key 164   MEDIA_PLAY_PAUSE    WAKE
+key 128   MEDIA_STOP          WAKE
+key 159   MEDIA_FAST_FORWARD  WAKE
+
+Launcher2 分析
+拖动效果处理
+DragView 是对象被拖动时的表示。DragSource 是可被拖动的对象，比如
+BubbleTextView
+
+
+DragScroller 是个接口，被 Workspace 实现，当拖到边界时，滚动到下一个
+Workspace。 SymmetricalLinearTween
+是当一个被拖动按住一定时间后， 变成可以拖动时的动画效果。
+
+
+
+
+把图标拖到垃圾箱上的处理流程
+DragController 方法 onTouchEvent 响应拖动事件
+MotionEvent.ACTION_MOVE， 拖动目标(DragView)移到接受对象时调用
+dropTarget.onDragEnter， 移出接受对象时调用 mLastDropTarget.onDragExit。
+
+垃圾箱（deletezone）就是一个 drop target，在 DeleteZone 类实现了接口
+DropTarget，以及 DragController.DragListener。 其 onDragEnter 方法把 
+DragView 的画笔设为mTrashPaint，而mTrashPaint 在 DeleteZone(Context,
+AttributeSet, int) 中已设置过滤色红色; 而 onDragExit 仅仅是把 DragView
+的画笔设回 null。 
+
+Launcher 中有许多类作了派生，这些类在一般的应用中都不去修改这些类的行为。
+比如，LauncherApplication 是 Application 的派生类，为此在 AndroidManifest.xml 把
+application 标签的属性 android:name 设置为 "com.android.launcher2.LauncherApplication"。
+DragLayer 是 FrameLayout 的派生类，Workspace 是 ViewGroup 的派生类，所以在
+res/layout-land/launcher.xml, res/layout-port/launcher.xml 中
+com.android.launcher2.DragLayer 作为了根标记名， com.android.launcher2.Workspace
+作为一个标记名。
+com.android.launcher2.ClippedImageView 、com.android.launcher2.DeleteZone、 com.android.launcher2.HandleView
+
+launcher.xml 看桌面的layout
+FrameLayout 的布局是把其中的 View
+都往屏的某个区域绘制，这个区域的大小由其包含的 View 中占面积最大的 View
+（不管这个 View 是否可见）决定，View
+压栈方式绘制，即先加入的先绘制，最后加入的绘制在最上层。
+
+workspace （Workspace），previous_screen、next_screen （ImageView，横屏时ClippedImageView），
+delete_zone （）， all_apps_button_cluster （RelativeLayout）
+workspace 占了除状态栏之外的空间，容纳各种图标。previous_screen、next_screen
+分别位于左下角和右下角，切换工作空间。 delete_zone
+位于底下居中的位置，用于删除图标的，默认是不可见的。 all_apps_button_cluster
+与 delete_zone 位置相同，又由3个子 View 组成， all_apps_button
+（com.android.launcher2.HandleView 对象）可以列出应用程序，
+hotseat_left（ImageView）可以启动电话应用，hotseat_right（ImageView） 可以进入浏览器。
+
+src/com/android/launcher2/Workspace.java
+初始化确定默认的 workspace
+  TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.Workspace, defStyle, 0);
+        mDefaultScreen = a.getInt(R.styleable.Workspace_defaultScreen, 1);
+        a.recycle();
+
+更换 workspace 调用函数snapToScreen
+scrollLeft、scrollRight，是对其包装，previousScreen和
+nextScreen分别调用了 scrollLeft 和 scrollRight
+
+ClippedImageView 横屏时使用，竖屏时使用 ImageView
+
+UserFolder, FolderIcon, Folder, LiveFolderIcon, DeleteZone, Workspace, AllApps2D, AllApps3D,
+实现了 DragSource，这些对象可以发起拖动。
+
+Workspace、DeleteZone、FolderIcon、LiveFolderIcon、UserFolder
+实现了 DragTarget，这些对象可以接受拖动，也就是对拖动的动作会作出响应。
+
+LauncherAppWidgetHostView 占据一个屏幕， Google 搜索条，机器人（2.2
+上才有）、时钟等
+BubbleTextView 是桌面快捷图标对象，占据一个网格。
+
+frameworks/base/core/java/com/android/internal/appwidget   定义了 AppWidget
+的AIDL
+
+ EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_START,
+                SystemClock.uptimeMillis());
+(ZygoteInit.java)
+
+res/values/sytles.xml 名为 WorkspaceIcon style，其 background 引用
+res/drawable/shortcut-selector.xml
+
+state_pressed 为true时使用图片 res/drawable/pressed_application_background.9.png
+作为 icon 的背景。
+
+state_focused 为true时，state_window_focused 为 true
+时，使用图片 res/drawable-mdpi/focused_application_background.9.png 或
+             res/drawable-hdpi/focused_application_background.9.png 
+如果 state_window_focused 为 false，使用的是颜色 android:color/transparent,
+这个颜色值在 frameworks/base/core/res/res/values/color.xml
+
+AllApps
+AllApp2D   id/all_apps_view
+  GridView  id/all_app_2d_grid
+  AllApps2D::HomeButton id/all_apps_2d_home
+
+  mAllAppsGrid = (AllAppsView) dragLayer.findViewById(R.all_apps_view);
+
+  res/xml/default_workspace.xml  是默认的 workspace 布局
+
+Launcher.onLongClick
+长点击事件处理，流程是：
+1. 根据 View 的 ID 判断被点中的 View
+是否是底下的三个图标，即相左切换 Workspace 按钮、向右切换 Workspace
+按钮、以及程序列表入口图标。
+2. 判断 Workspace 是否锁住了，锁住了返回，结束处理。否则，从 CellLayout
+对象获取 CellLayout.CellInfo。
+3. 如果是长按在一个空白的地方， showDialog(cellInfo)，让用户添加项目到
+  Home，如果长按的是一个项目 （不是文件夹），则
+  mWorkspace.startDrag(cellInfo) 开始拖动。 对于文件夹 (folder)， 长按键在
+  Folder.onLongClick 处理，
+
+
+WallpaperChooser.java
+Live Wallpaper 与一般的 Service 很类似，唯一不同的是他有个方法
+onCreateEngine， 这是用来创建 WallpaperService.Engine
+
+frameworks/base/services/java/com/android/server/WallpaperManagerService.java
+frameworks/base/core/java/com/android/internal/service/wallpaper/ImageWallpaper.java
+默认的内置墙纸，就是简单得显示静态图片。
+frameworks/base/core/java/android/app/WallpaperInfo.java
+frameworks/base/core/java/android/app/WallpaperManager.java
+frameworks/base/core/java/android/service/wallpaper/WallpaperService.java
+frameworks/base/core/java/android/service/wallpaper/WallpaperSettingsActivity.java
+WallpaperManager.setWallpaper
+
+  3D Livepaper  多点触控
+
+  packages/wallpapers/Basic/Android.mk
+  packages/wallpapers/Basic/res/raw/galazy.rs
+
+  RenderScriptScene.java  派生类 grass/GrassRS.java,  fall/FallRS.java
+  frameworks/base/libs/rs/java/Fountain.java, Film.java
+  system/core/libcc Almost C Compile,  OTCS obfuscated tiny C compile
+  android.renderscript.RSSurfaceView
+  android.renderscript.RenderScript
+
+跑马灯
+android:singleLine="true"
+android:ellipsize="marquee"
+
+android:addstatesFromChildren="true"
+android:focusable="true"
+
+
+Bitmap (位图)的方法：   createBitmap
+Canvas (画布) 类方法 drawPoint（画点），
+                     drawLine（画线）， 
+                     drawCircle（画圆），
+                     drawOval（椭圆），
+                     drawRect（矩形区域）、 
+                     drawPath（路径）
+                     drawPicture
+                     drawBitmap
+                     drawText
+                     clipRect 设置剪裁区域
+                     setViewport 为图形输出设置当前视口
+                     setBitmap   设置画布执行绘制的位图
+                     setMatrix   设置矩阵
+                     skew 倾斜
+                     rotate 旋转
+
+Paint (画笔)   getShader， setShader
+
+Shape ：  ArchShape,   OvalShape,   PathShape,   RectShape,  RoundRectShape(四角为弧形的矩形)
+Shader :包括 BitmapShader, ComposeShader,    渐变色
+MaskFilter ：包括 BlurMaskFilter, EmbossMaskFilter,   TableMaskFilter
+
+LayoutInflater  方法 from 通过 getSystemService 获取上下文(Content)中的 LayoutInflator 的实例。
+方法 inflate 把 xml 表述的layout实例化成相应的View 对象。
+Window （Window 是抽象类，PhoneWindow和MidWindow 是其实现） 中 方法
+  public void setContentView(int layoutResID) 中的 就是通过 LayoutInflater.inflate 实现。
+ 有点像View 类findViewById 
+
+
+AnimationListener 在 Animation.java 中定义的接口，用于接受动画开始、 结束、 重复等通知。
+ViewGroup.java 方法 setLayoutAnimationListener 设置域 mAnimationListener
+的值，亦即动画接口。 在方法 dispatchDraw 中使用此接口的 onAnimationStart
+方法。而 ViewGroup 及 View 都实现了 AnimationListener 中的方法
+onAnimationStart 和 onAnimationEnd, 但没有 onAnimationRepeat。 View 中的方法
+setAnimation、 getAnimation、 clearAnimation 以及 startAnimation
+等方法均与动画有关。
+
+
+
+android.content.ServiceConnection
+android.app.Service
+android.content.Context.bindService();
+
+/home/leo/android/platform/development/samples/ApiDemos/src/com/example/android/apis/app
+RemoteService.java  
+RemoteService.Controller
+startService(new Intent("com.example.android.apis.app.REMOTE_SERVICE"));
+stopService(new Intent("com.example.android.apis.app.REMOTE_SERVICE"));
+
+LocalService.java 
+
+LocalServiceActivities.java
+LocalServiceActivities.Controller
+   startService(new Intent(Controller.this, LocalService.class));
+   stopService(new Intent(Controller.this, LocalService.class));
+
+
+startService/stopService 是启动、停止服务;
+bindService/unbindService 是与服务建立连接，断开连接。
+相比服务启动、停止，与服务的连接更显复杂，涉及到 IPC 的问题，如AIDL， IBinder。 
+
+客户端在绑定服务时， 要创建 ServiceConnection 对象，重写 onServiceConnected，
+onServiceDisconnected 方法， 在 onServiceConnected 方法里获取服务对象，在
+onServiceDisconnected 里释放服务对象。
+
+
+
+服务连接的大概流程是：客户端发起绑定（bindService）， 系统查询服务，相应服务端 onBind 响应之，
+系统在得到服务端响应后，再向客户端发送 ServiceConnection.onServiceConnected 消息。
+
+服务端会在重写 onBind 返回 IBinder 对象，即服务对象。
+对于本地服务，一般有一个域，它是一个 Binder 扩展类的对象，这个域在 onBind
+中告诉给客户端。
+而对于远程服务，也大致类似，但它是 AIDL 定义接口的内部类 Stub 的对象。
+所以，对于本地服务，要实现一个Binder 扩展类，而对于远程服务的话，要 实现 AIDL
+接口的内部类 Stub （ 如 IRemoteService.Stub ），是否是 IBinder 扩展。
+
+本地服务和远程服务，在 onServiceConnected 有差别， 即获取服务对象有差别 
+mService = IRemoteService.Stub.asInterface(service);//远程服务获取
+mBoundService = ((LocalService.LocalBinder)service).getService();  //本地服务
+
+在建立了连接之后，客户端就可以使用服务了。  unbindService
+,就可以停止与服务端的连接了。
+
+再从 AIDL 接口本身说来，服务端就是把接口的各个方法实现， 这些方法在其内部类
+Stub 里定义，所以就是实现一个 Stub 的类。
+而客户端就是使用 AIDL 接口。
+当然，客户端和服务端有一个建立连接的过程。 服务端要做的是建立一个对象，重写 onBinder
+传递对象， 客户端bindService, unbindService 以及管理连接的一个 ServiceConnection 对象
+
+
+IPC 的回调机制：
+如果 IDL 接口在客户端实现，那么这就是回调了。这个其实就是一个反向的通讯，一般
+IPC 是客户端调用服务端，而反向 IPC 是服务端调用客户端方法。
+Binding 是 RemoteService 的客户端，其实现一个回调接口。
+ private IRemoteServiceCallback mCallback = new IRemoteServiceCallback.Stub() {
+     ...
+ }
+当然，凡是回调都要注册，这样才能与对方建立通讯。 撤销注册。
+
+IRemoteService.aidl 接口中定义了两个方法
+ void registerCallback();
+ void unregisterCallback();
+
+public interface IRemoteService extends android.os.IInterface{
+    /** Local-side IPC implementation stub class. */
+        public static abstract class Stub extends android.os.Binder implements com.example.android.apis.app.IRemoteService {
+            private static class Proxy implements com.example.android.apis.app.IRemoteService {
+               public static com.example.android.apis.app.IRemoteService asInterface(android.os.IBinder obj)
+              {
+
+               
+               ... ... 
+                 public void registerCallback() throws android.os.RemoteException {
+                 ... ...}
+                 public void unregisterCallback() throws android.os.RemoteException {
+                     ... ... }
+            }
+        }
+
+   public void registerCallback() throws android.os.RemoteException;  
+   public void unregisterCallback() throws android.os.RemoteException;  
+}
+之所以，扩展静态内部类 Stub， 是因为 IRemoteService （即AIDL 定义的接口）
+是接口，我们不宜直接扩展值。 而 Stub 是 IRemoteService 的实现抽象类，
+IRemoteService 接口定义了方法 Stub 当然继承了，但 Stub
+没有实现接口中定义的方法（所以Stub干脆定义成了抽象类），这些方法必须由服务器端实现。  
+而相反，IRemoteService.Stub.Proxy 同样也是 IRemoteService
+的实现类，她是可以实例化的静态类，而且实现了 IRemoteService
+的所有方法。实际上，Proxy就是客户端的标准实现，客户端调用接口的方法就是调用Proxy中的实现。
+因为 IRemoteService.Stub 方法 asInterface 实际上返回的是
+IRemoteService.Stub.Proxy 对象，虽然写的是 IRemoteService
+接口（对用户隐藏具体实现）。
+
+注意到 IRemoteService.Stub 是 Binder 的派生类，  而 IRemoteService.Stub.Proxy
+各个方法实现使用 IBinder （mRemote）方法 transact 传递 Parcel
+类型数据（所以，各个方法的参数都会包装成 Parcel 类型数据，也就是这些参数必须是
+Parcelable）。 而 IRemoteService.Stub.onTransact 就是响应 IBinder.transact，
+所以，IRemoteService.Stub 与 IRemoteService.Stub.Proxy 中 IRemoteService
+接口的各个方法是通过 IBinder 的 transact / onTransact 对接的。
+
+
+   public int onStartCommand(Intent intent, int flags, int startId) {        
+        // We want this service to continue running until it is explicitly
+        // stopped, so return sticky.
+        return START_STICKY;
+    }
+sticky 就是滴答的意思吧！
+
+
+frameworks/base/core/java/android/content/pm/PackageManager.java
+installPackage
+
+Context getSystemService   可以获取的服务有   POWER_SERVICE, WINDOW_SERVICE, 
+                                 UI_MODE_SERVICE, ACCOUNT_SERVICE, ACTIVITY_SERVICE, 
+                                           ALARM_SERVICE, SEARCH_SERVICE,NOTIFICATION_SERVICE
+                                           STORAGE_SERVICE...
+ActivityManager里面可以获取到当前运行的所有活动，这是任务管理器的核心。
+ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);  
+ComponentName cn = am.getRunningTasks(1).get(0).topActivity;  
+
+仔细看getRunningTasks的文档，里面说获取的是系统中"running"的所有task，"running"状态包括已经被系统冻结的task。而且返回的这个列表是按照顺序排列的，也就是说第一个肯定比第二个后运行。getRunningTasks有个整型参数，表示返回列表的最大个数。那么，我们如果把1作为参数给进去，那么他返回的task就是当前运行的那个task，然后从task中获取到最顶层的activity，这个activity就是当前显示给用户的那个activity了。
+类似的，ServiceManager 可以管理系统中运行的所有服务 
+
+startService， stopService，  startActivity， stopActivity --- Context 提供。
+
+MountService监听是否有SD卡安装及移除，
+ClipboardService提供剪切板功能，
+PackageManagerService提供软件包的安装移除及查看等等，应用程序可以通过系统提供的Manager接口来访问这些Service提供的数据
+WindowManager
+SystemContextManager
+SensorService
+PowerManager
+PackageManager
+ContextManager
+BatteryManager
+AlarmManager， AudioManager
+ActivityManager
+以android系统支持sensor（传感器）实例来说明框架层的service和manager是如何配合工作的
+
+1)         什么是sensor
+sensor是传感器, 比如控制横竖屏切换利用的就是重力传感器(gsensor), 还有accelerator sensor可取得x, y, z三个轴上的加速度(应用如平衡球, 小猴吃香蕉等)
+
+2)         应用程序调用（以下为关键代码）
+sensorManager=(SensorManager)getSystemService(context.SENSOR_SERVICE);
+lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+sensorManager.registerListener(sensorListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+
+3)         Manager层
+
+a)          提供给应用程序调用的接口，同实与Service交互，实现功能
+frameworks/base/core/java/android/hardware/SensorManager.java
+
+4)         Service层
+
+a)          开机时就运行的管理Sensor的后台服务
+frameworks/base/services/java/com/android/server/SensorService.java
+
+b)         snesor后台服务需要的JNI，通过它与系统级交互
+frameworks/base/services/jni/com_android_server_SensorService.cpp
+
+5)         系统层
+
+a)          传感器的头文件，硬件提供商按此文件的定义实现其功能
+hardware/libhardware/include/hardware/sensors.h
+
+b)         传感器的系统层实现，与内核交互，此处通常是硬件提供商提供的
+hareware/libsensors
+
+6)         内核及硬件层
+内核访问硬件，同时以设备文件等方式提供给上层控制接口和传感器数据
+
+3.     系统层实现
+1)         frameworks/base/core/java/android/*Manager.java     对应用的接口
+2)         frameworks/base/core/jni/                                                     对应用的接口的JNI
+3)         frameworks/base/services/java/com/android/server/    后台服务
+4)         frameworks/base/services/jni/                                                        JNI与系统层接口
+5)         hardware/libhardware/include/                                              系统层头文件
+6)         hardware/libxxx                                                                     系统库支持
+7)         内核支持
+
+4.     应用程序如何使用
+1)         查看系统提供哪些服务
+find frameworks/base/core/java/android/ -name *Manager.java
+此处可以看到调用系统提供服务的入口
+2)         一般register listener，事件发生时都收到回调
+
+5.    新建一个service（以froyo为例）
+
+1)         接口：接口供应用调用
+frameworks/base/core/java/android/app/ContextImpl.java  加服务名与Manager对应
+frameworks/base/core/java/android/content/Context.java    加服务名定义
+
+2)         Manager：提供服务对应的调用接口
+frameworks/base/core/java/android/app/StartXXXXManager.java        实现调用接口
+frameworks/base/core/java/android/app/IXXXXManager.aidl      定义调用接口
+frameworks/base/Android.mk         加入aidl的编译
+
+3)         service：提供后台服务支持
+frameworks/base/services/java/com/android/server/XXXXService.java 服务实现
+frameworks/base/services/java/com/android/server/SystemServer.java   启动服务
+
+--------------------------------------------------------------------------------------
+
+
+Parcel  方法很多，按操作分类，可以分成读（read），写（write），创建（create）。按数据结构
+Primitives，primitive Arrays; 按数据类型可以分 Byte， Double， Float, Int，
+Long， String等。
+Primitives
+writeByte, writeDouble, writeFloat, writeInt, writeLong, writeString
+readByte,   readDouble, readFloat,  readInt,  readLong,  readString
+用来读写基本数据类型，其他大多数数据操作都是基于这些函数。
+
+Primitive Arrays
+writeByteArray, writeDoubleArray, writeFloatArray, writeIntArray,
+writeLongArray, writeStringArray, writeBooleanArray, writeSparseBooleanArray
+
+readByteArray, readDoubleArray, readFloatArray, readIntArray,
+readLongArray, readStringArray, readBooleanArray, readSparseBooleanArray
+
+createByteArray, createDoubleArray, createFloatArray, createIntArray,
+createLongArray, createStringArray, createBooleanArray, createSparseBooleanArray
+
+Parcelables
+writeParcelable， writeParcleableArray， writeTypedArray, writeTypedList
+readParcelable，  readParcleableArray，  readTypedArray,  readTypedList
+
+Bundles
+writeBundle(Bundle), readBundle(),  readBundle(ClassLoader).
+
+Active Objects
+writeStrongBinder, writeStrongInterface, writeBinderArray,
+writeBinderList,writeFileDescriptor
+readStrongBinder, readBinderArray, readBinderList, readFileDescriptor
+createBinderArray, CreateBinderArrayList
+
+Untyped Containers
+writeArray, writeList,  writeMap, writeSparseArray
+readArray,  readList,   readMap,  readSparseArray, readArrayList
+
+frameworks/base/libs/binder/Parcel.cpp
+
+
+Bundle  表示 String 到 Parcelable types 的映射。表示一条可执行命令，常用于在其他的线程执行的代码
+
+
+Binder
+frameworks/base/libs/binder/IInterface.cpp,
+frameworks/base/core/jni/android_util_Binder.cpp, android_util_Binder.h, 
+内核代码放在目录 drivers/misc/binder.c
+include/linux/binder.h
+
+frameworks/base/libs/binder
+frameworks/base/include/binder
+frameworks/base/include/private/binder
+frameworks/base/core/jni/android_util_Binder.cpp
+frameworks/base/core/jni/android_util_Binder.h
+frameworks/base/cmds/servicemanager/binder.h
+frameworks/base/cmds/servicemanager/binder.c
+
+AIDL 类均是 Parcelable 的实现 (implements Parcelable), 这一点在 Google I/O
+文档中已经明确指出了的。Parcel 类是被 final 修饰，不可继承; 而 Parcel 是与
+IBinder 配合，用来在进程间发送消息的(IPC)。 AIDL 是为了 IPC 存在的。
+
+实现 Parcleable 接口的类必须有个名为 CREATOR 的静态域，CREATOR 是一个实现
+Parcelable.Creator 接口的对象。
+
+应用的 4 个组件
+Activity  用户界面，用户交互活动。
+Service   后台服务
+BroadcastReceiver    接受/响应全局的事件
+ContentProvider      允许应用程序访问（读写、创建）某个数据库
+
+
+
+
+当 ContentReslover 产生一个请求时，请求指向的目标 ContentProvider 就会被激活，
+其他三个组件 (activities, services, broadcast receivers) 会被异步消息 intents
+激活。 对于 activities 和 services， intents 命名了正被请求的 action，
+并指定了要运行的数据的 URI。 对于 broadcast receivers， Intent
+对象命名了要广播的 action。
+
+Intent 是一堆相关的信息集合，包括接受Intent的组件关心的信息，如执行的action，
+有效的数据， 以及 系统相关的信息，如类别和指令。
+一个Intent对象显示指定一个目标组件，对显式 Intent 指定的对象，
+Android会找到该组件（AndroidManifest.xml 文件声明的 Activities、Services）
+假如一个目标组件没有显式指定name，Android必须定位最佳的组件响应这个Intent。
+Android 通过比较 Intent 对象和潜在目标的 Intent-filter
+来达到此目的。所以 IntentFilter 是隐式Intent。在
+AndroidManifest.xml中一个组件（ Activities，Services，
+BroadcastReceiver ）可以包含任意个IntentFilter
+（即intent-filter标记），如果组件没有定义IntentFilter，它可以通过显式Intent对象激活。
+
+在代码里创建和注册的 BroadcastReceiver ， 
+以IntentFilter对象直接实例化
+AndroidManifest.xml intent-filter 标记
+
+AndroidManifest.xml <intent-filter ../>
+context.registerReceiver(); 仅适合 BroadcastReceiver, 直接创建了 IntentFilter
+new Intent();
+
+
+Intent 如果没有 action， 她不会被激活; 另一方面，如果一个 Intent 对象没有指定
+action， 她就能匹配任意的 intent-filter。 同理， 如果 Intent 对象没有指定
+category， 那么默认匹配 Intent-filter 的 category， 除非当她们传给
+startActivity 时， 所有的隐式 Intent 中已有 CATEGORY_DEFAULT 的
+Intent。所以要接受隐式 Intent 的 Activity 必须包括 CATEGORY_DEFAULT ， 但对
+"android.intent.action.MAIN", "android.intent.action.LAUNCHER" 例外。
+
+
+显式 Intent
+onClick (View v) {
+    ...
+    startActivityForResult(new Intent(v.getContext(), RefreshJobs.clss),
+                        0);
+    ...
+}
+
+
+隐式 Intent
+Intent myIntent = new Intent( Intent.ACTION_PICK,
+                              Uri.parse("content://contacts/people"));
+startActivity(myIntent);
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="helloworld.sxboeye" android:versionCode="1" android:versionName="1.0">
+    <application android:icon="@drawable/icon" android:label="@string/app_name">
+        <activity android:name=".HelloWorld" android:label="@string/mainactivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name =".ListDemo" android:label="@string/listdemo">
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_LIST" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+
+       Intent list = new Intent("android.intent.action.CREATE_LIST");
+        list.setClassName("helloworld.sxboeye", "helloworld.sxboeye.ListDemo");
+        startActivity(list);
+        return true;
+
+
+
+一个 intent-filter 至少有一个 action
+
+component name 相关的方法 setComponent, getComponent, 
+Action 相关的方法setAction, getAction
+Category 相关的方法 addCategory， removeCategory， getCategories
+Data   相关的方法 setData， getData （Uri）， setType, getType (MIME,String)，
+                 setDataAndType （适用于 URI 和 MIME）
+
+setClass, setClassName
+
+
+标准意图的活动动作（Standard intent activity actions）
+Intent.ACTION_EDIT
+Intent.ACTION_MANI
+Intent.ACTION_VIEW
+Intent.ACTION_SYNC
+Intent.ACTION_DIAL
+... ...
+这类活动使用 startActivity(Intent)
+
+标准意图的广播动作
+Intent.ACTION_REBOOT
+Intent.ACTION_BOOT_COMPLETE
+Intent.ACTION_PACKAGE_ADD
+Intent.ACTION_PACKAGE_
+
+
+URI 包括 URL 和 URN
+
+URL   网络通讯协议
+URN   表示持久、专门机构负责事物，  比起网页。
+
+URI 与 MIME
+两者在形式上完全一样，只是MIME必须以"content://"开始，这是表示该数据类型优先于平台的数据类型。
+
+format
+schema://host:port/path    
+例如：  weather://com.msi.manning/loc?zip=12345
+"weather://" 是方案; "com.msi.manning" 是主机，也叫授权; "/loc" 是路径,"?zip=12345"
+是路径。
+再如： file:///tmp/android.txt
+"file://" 是方案，"/tmp/android.txt" 是路径。
+
+bob@google.com:80
+
+
+"geo://", "tel://", "https://", "file://", "people://"
+
+android.net.Uri;
+StringUri
+OpaqueUri                 mailto:nobody@google.com
+HierarchicalUri           http://google.com
+
+HierarchicalUri 没有 <authority> 和 <query>, 而 <path> 也只有 HierarchicalUri
+才有。
+
+
+Uri.java 内部类  AbstractHierarchicalUri 的方法 parseHost
+静态内部类 PathPart 
+
+
+UTF-8 是其默认的编码 DEFAULT_ENCODING
+www.faqs.org/rfcs/rfc2396.html
+
+BNF
+<scheme>://<authority><path>?<query>
+<authority><path>?<query> 也称 scheme-specific
+<query> 一般形如 q=value
+
+媒体文件类型
+image/tiff, audio/mid, application/pdf
+
+
+
+Android View 是单线程的， UI 操作并不是线程安全的， 必须在 UI 线程中执行，Handler 获取用户界面线程以外的线程来实现 UI 线程更新。
+
+DeferredHandler
+
+post, postAtTime  放入消息队列里，延迟执行。
+sendMessage   handleMessage
+
+Thread 类实现了 Runable
+
+new Thread(this).start();
+线程的入口函数是run方法，见 Runnable.java 的注释。
+Thread.java  (libcore/luni-kernel/src/main/java/java/lang)  方法 
+调用
+VMThread.java (libcore/luni/src/main/java/java/lang) 方法 VMThread.create
+，后者调用
+java_lang_VMThread.c （dalvik/vm/native/）
+函数Dalvik_java_lang_VMThread_create，这个函数再调用
+Thread.c (dalvik/vm) 函数 dvmCreateInterpThread 。 dvmCreateInterpThread
+调用pthread_create创建了新的线程，这个线程的入口函数是 interpThreadStart，
+入口函数调用 stack.c (dalvik/vm/interp) 的 dvmCallMethod ，这里要注意到
+dvmCallMethod 开始处的断言，确保 run->name 为 "run"，要找到 Java 层的 "run"
+方法。然后，通过 dvmCallMethodV 调用到 dvmInterpret
+(dalvik/vm/interp/Interp.c)，执行 run 方法。
+
+dalvik/vm/Thread.[ch]
+
+
+frameworks/base/libs/ui/EventHub.cpp:58:#define SEQ_MASK 0x7fff0000
+frameworks/base/libs/utils/Threads.cpp:522:    condState->sema = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
+
+
+Runable ，Run
+Parcelable， Parcel
+Drawable， 
+Clonable
+Observable （模板抽象类，即Object）， Observer
+ContentObserver，  ContentObservable
+DataSetObserver，  DataSetObservable
+Compareable， Cloneable，Serializable, Appendable, Cloneable, Formattable,
+Flushable,   Animatable, Readable
+xxxable Java 包中的接口名称。
+find frameworks/ libcore/   \( -name "*.java" \) | xargs grep --color -n -e "^\s*public\s*interface\s*\w*able "
+
+MVC 模型
+
+I was confused by the code of auto brightness control.
+The following is the code in PowerManagerService.java,
+
+
+netstat
+su
+adbd stop
+setprop service.adb.tcp.port 5555
+adbd start
+netstat
+
+
+libcore/luni/src/main/java/java/util/LinkedList.java  单链表
+java.util.LinkedList     size,  removeFirst,  getFirst,   add , remove,  clear 等方法。
+
+
+libcore/luni/src/main/java/java/lang/   String  字符串类
+                                       Charsequence
+                                       是一个接口，而且是处理有序的字符集合（序列）。
+                                       Charset  字符集，
+
+
+InputStreamRead in = new InputStreamReader (new FileInputStream(oldname),
+                                            "BIG5");
+OutputStreamWriter out = new OutputStreamWriter (new FileOutputStream(newname,
+"GBK");
+
+while ( (i = in.read()) >=0 )
+    out.write(i);
+
+
+
+
+setInputMethodLocked(String id) in InputMethodManagerService.
+
+
+JNI
+
+dalvik/vm/Jni.c
+dalvik/vm/JniInternal.h
+dalvik/vm/Native.c
+dalvik/vm/Native.h
+
+
+AndroidRuntime::registerNativeMethods 是个静态成员函数
+frameworks/base/core/jni/AndroidRuntime.cpp
+frameworks/base/include/android_runtime/AndroidRuntime.h   
+AndroidRuntime 是个虚基类
+onStarted
+onZygoteInit
+onExit
+
+
+
+Android Activity间用Intent和Bundle传递参数
+传递方：
+　　//点击btn_sub传递 fieldHeight.getText()和 fieldWeight.getText()
+　　private void setListeners(){
+　　btn_sub.setOnClickListener(calrBMI);
+　　}
+
+　　private OnClickListener calrBMI = new OnClickListener()　　{
+　　public void onClick(View v)　{
+　　Intent intent = new Intent();
+　　Bundle bundle = new Bundle();
+
+　　bundle.putString("key_height", fieldHeight.getText().toString());
+　　bundle.putString("key_weight", fieldWeight.getText().toString());
+　　intent.setClass(ActivityMain.this,Report.class);
+
+  　intent.putExtras(bundle);
+
+　　startActivity(intent);
+　　}
+　　};
+
+　　接收方：
+　　Bundle bundle = new Bundle();
+
+　　bundle = this.getIntent().getExtras();
+　　double height = Double.parseDouble(bundle.getString("key_height"))/100;
+　　double weight = Double.parseDouble(bundle.getString("key_weight"));
+
+
+
+
+
+import android.Manifest;
+
+这个类是文件 framework/base/core/res/AndroidManifest.xml 经 aapt 编译而产生。
+
+=======================
+First, be sure to build the source in order to get the rgb2565
+executable.
+
+Then, starting with a png (without transparency), do the following:
+
+1. Convert the png to raw format, using imagemagick:
+   convert -depth 8 myimage.png rgb:myimage.raw
+2. Run rgb2565 against the png using the following:
+   rgb2565 -rle < myimage.raw > myimage.rle
+   ========================
+
+
+我对这个文件还没仔细研究过，不过一个网友突然问了我一个问题，我也还是大概的知道一些。
+
+    android的系统应用中的一个重要的进程就是zygote,所有的java应用程序进程都是由zygote派生出来的，zygote这个进程的作用就是“生儿子”。具体的一个应用如何出来的大家可以看我以前的一篇文章-----Android 应用初始化及窗体事件的分发。
+
+   首先要了解一点初始化语言的基本知识吧：
+
+Services（服务）是一个程序，他在初始化时启动，并在退出时重启（可选）。Services（服务）的形式如下：
+
+       service <name> <pathname> [ <argument> ]*
+          <option>
+          <option>
+Options为选项，具体可以参考linux　service命令
+zygote进程正是在linux kernel startup后通过这个文件启动的，具体看init.rc中这一段：
+service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
+    socket zygote stream 666
+    onrestart write /sys/android_power/request_state wake
+    onrestart write /sys/power/state on
+一段一段的分析这个代码：
+service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
+启动服务名字zygote.   /system/bin/app_process 进程的bin文件具体路径，后面跟的就是启动参数-Xzygote /system/bin --zygote --start-system-server。这段参数有什么作用可以对照看代码app_main.cpp
+if (i < argc) {
+        arg = argv[i++];
+        if (0 == strcmp("--zygote", arg)) {
+            bool startSystemServer = (i < argc) ? 
+                    strcmp(argv[i], "--start-system-server") == 0 : false;
+            setArgv0(argv0, "zygote");
+            set_process_name("zygote");
+           runtime.start("com.android.internal.os.ZygoteInit",
+                startSystemServer);
+        } else {
+            set_process_name(argv0);
+
+            runtime.mClassName = arg;
+
+            // Remainder of args get passed to startup class main()
+            runtime.mArgC = argc-i;
+            runtime.mArgV = argv+i;
+
+            LOGV("App process is starting with pid=%d, class=%s.\n",
+                 getpid(), runtime.getClassName());
+            runtime.start();
+        }
+    }
+
+-Xzygote 这个参数的意义是在jvm中设置gDvm.zygote = true;至于这个参数的具体作用大家自己看代码吧。 其流程是 androidRuntime->start() call---> JNI_CreateJavaVM() call ---->dvmStartup()(戴维林虚拟机初始化) call---->dvmProcessOptions().
+
+/system/bin :也许是告知系统应用的路径吧，大家看到了告诉我。
+
+onrestart write /sys/android_power/request_state wake：
+
+如果这个服务重启了，打开/sys/android_power/request_state 这个文件写入wake字符串。
+
+{{{1
+MultiMedia
+frameworks/base/media
+opencore development document
+external/opencore/doc
+}}}1
+
+
+
+In Android goldfish kernel I have to fix CONSISTEN_DMA_SIZE and also
+> set CONFIG_FORCE_MAX_ZONEORDER=12 so that framebuffer driver can
+> allocate memory without any problem.
+
+CONFIG_FRAMEBUFFER_CONSOLE 
+
+
+
+
+
+
+
+Network Time is not auto updating with some service provider
+http://en.wikipedia.org/wiki/NITZ
+
+http://azero.tsang.blog.163.com/
+Android手机应用程序界面设计指南系列（3）——交互模式 
+
+
+
+http://androidappdocs.appspot.com/guide/topics/manifest/manifest-intro.html
+http://androidappdocs.appspot.com/guide/topics/manifest/activity-element.html
+
+http://androidappdocs.appspot.com/guide/topics/resources/index.html
+http://androidappdocs.appspot.com/guide/topics/resources/providing-resources.html
+
+http://androidappdocs.appspot.com/guide/topics/resources/available-resources.html
+
+apps$pwd
+
+http://androidappdocs.appspot.com/guide/topics/manifest/activity-element.html
+apps$ find . -name "AndroidManifest.xml" | xargs grep --color -n -e " android:process"
+apps$ find . -name "AndroidManifest.xml" | xargs grep --color -n -e " android:theme"
+apps$ find . -name "AndroidManifest.xml" | xargs grep --color -n -e " android:windowSoftInput"
+
+apps$ find . -name "AndroidManifest.xml" | xargs grep --color -n -e "android:configChanges"
+./Gallery3D/AndroidManifest.xml:29:            android:configChanges="keyboardHidden|orientation" 
+./Gallery3D/AndroidManifest.xml:86:            android:configChanges="orientation|keyboardHidden" android:label="@string/crop_label"> 
+./Gallery3D/AndroidManifest.xml:98:            android:configChanges="orientation|keyboardHidden" 
+./AlarmClock/AndroidManifest.xml:19:                android:configChanges="orientation|keyboardHidden|keyboard|navigation"> 
+./AlarmClock/AndroidManifest.xml:34:                android:configChanges="orientation|keyboardHidden|keyboard|navigation" /> 
+./AlarmClock/AndroidManifest.xml:41:                android:configChanges="orientation|keyboardHidden|keyboard|navigation"/> 
+./AlarmClock/AndroidManifest.xml:51:                android:configChanges="orientation|keyboardHidden|keyboard|navigation"/> 
+./Email/AndroidManifest.xml:73:            android:configChanges="keyboardHidden|orientation" >
+
+android:configChanges
+Lists configuration changes that the activity will handle itself. When a configuration change occurs at runtime, the activity is shut down and restarted by default, but declaring a configuration with this attribute will prevent the activity from being restarted. Instead, the activity remains running and its onConfigurationChanged() method is called.
+
+apps$ find . -name "*.java" | xargs grep --color -n -e "FLAG_ACTIVITY_NEW_TASK" 
+./AccountsAndSyncSettings/src/com/android/settings/AccountSyncSettings.java:452:                // FLAG_ACTIVITY_NEW_TASK. 
+./AccountsAndSyncSettings/src/com/android/settings/AccountSyncSettings.java:454:                intent.setFlags(intent.getFlags() | Intent.FLAG_ACTIVITY_NEW_TASK); 
+./Contacts/src/com/android/contacts/TwelveKeyDialer.java:585:                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); 
+./Contacts/src/com/android/contacts/TwelveKeyDialer.java:768:        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); 
+./Contacts/src/com/android/contacts/TwelveKeyDialer.java:802:        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); 
+./Contacts/src/com/android/contacts/RecentCallsListActivity.java:942:                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); 
+./Contacts/src/com/android/contacts/RecentCallsListActivity.java:994:                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+... ... 
+
+apps$ find . -name "*.java" | xargs grep --color -n -e "FLAG_ACTIVITY_CLEAR_TOP" 
+./Gallery3D/src/com/cooliris/media/HudLayer.java:78:            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+./Contacts/src/com/android/contacts/ui/QuickContactWindow.java:832:            mIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+./Contacts/src/com/android/contacts/ui/QuickContactWindow.java:963:	    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+./Contacts/src/com/android/contacts/ContactsListActivity.java:1884:                        Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED); 
+./Contacts/src/com/android/contacts/ContactsListActivity.java:1921:            shortcutIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+./Email/src/com/android/email/activity/MailboxList.java:102:        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+./Email/src/com/android/email/activity/AccountFolderList.java:144:        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+./Email/src/com/android/email/activity/setup/AccountSetupBasics.java:129:        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+./Email/src/com/android/email/activity/setup/AccountSetupBasics.java:138:        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+... ... 
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="com.yarin.android.CityWeather"
+      android:versionCode="1"
+      android:versionName="1.0">
+    <application android:icon="@drawable/icon" android:label="@string/app_name">
+        <activity android:name=".CityWeather"   android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+  <uses-permission android:name="android.permission.INTERNET"></uses-permission>
+    <uses-sdk android:minSdkVersion="8"/>
+</manifest>
+
+
+  	<intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+会自动启动， log如下
+[2010-11-29 10:28:10 - ChinaWeather] Starting activity com.yarin.android.CityWeather.CityWeather on device emulator-5554
+[2010-11-29 10:28:12 - ChinaWeather] ActivityManager: Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.yarin.android.CityWeather/.CityWeather }
+
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <!-- category android:name="android.intent.category.LAUNCHER" /-->
+            </intent-filter>
+[2010-11-29 10:35:35 - ChinaWeather] No Launcher activity found!
+[2010-11-29 10:35:35 - ChinaWeather] The launch will only sync the application package on the device!
+[2010-11-29 10:35:35 - ChinaWeather] Performing sync
+在主菜单界面，没有看到 应用图标。
+#pm list packages 
+能看到软件包
+package:com.yarin.android.CityWeather 
+
+# am start -n com.yarin.android.CityWeather/.CityWeather 
+Starting: Intent { cmp=com.yarin.android.CityWeather/.CityWeather } 
+
+
+  	<intent-filter></intent-filter>（即<activity>无intent）
+或者
+  	<intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+
+无法启动 activity
+一个 intent-filter 至少有一个 action。  如果，没有intent-filter，请重新实现  application 类，并注册activity。
+
+
+system/etc/permissions
+To run my application in the same process I use a shared user id:
+android:sharedUserId="android.uid.phone"
+And a shared process id:
+android:process="com.android.phone"
+
+When I only use the shared user id, I can add permissions:
+http://groups.google.com/group/android-platform/browse_thread/thread/fb00c54e9c60294e?hl=en
+(See answer of Dianne Hackborn)
+
+But when I'm using the same process id, the permissions added to the
+androidManifest file don't apply any more. But maybe I do something
+wrong here..
+
+Is there some other way to add your own permissions when using the
+same process id?
+The android:process tags absolutely no impact at all on permissions.  Permissions are associated with a uid, not a process.
+
+
+
+
+
+<?xml version="1.0" encoding="utf-8"?> 
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" 
+      package="helloworld.sxboeye" android:versionCode="1" android:versionName="1.0"> 
+    <application android:icon="@drawable/icon" android:label="@string/app_name"> 
+        <activity android:name=".HelloWorld" android:label="@string/mainactivity"> 
+            <intent-filter> 
+                <action android:name="android.intent.action.MAIN" /> 
+                <category android:name="android.intent.category.LAUNCHER" /> 
+            </intent-filter> 
+        </activity> 
+        <activity android:name =".ListDemo" android:label="@string/listdemo"> 
+            <intent-filter> 
+                <action android:name="android.intent.action.CREATE_LIST" /> 
+            </intent-filter> 
+        </activity> 
+    </application> 
+</manifest> 
+
+代码片断
+       Intent list = new Intent("android.intent.action.CREATE_LIST"); 
+        list.setClassName("helloworld.sxboeye", "helloworld.sxboeye.ListDemo"); 
+        startActivity(list); 
+        return true; 
+
+app/UiModeManager.java
+
+ACTION_ENTER_DESK_MODE
+platform$ find . -name "*.java" | xargs grep --color -n -e "showCallScreen"
+./packages/apps/Contacts/src/com/android/contacts/TwelveKeyDialer.java:1039:            if (phone != null) phone.showCallScreenWithDialpad(showDialpad);
+./packages/apps/Contacts/src/com/android/contacts/TwelveKeyDialer.java:1041:            Log.w(TAG, "phone.showCallScreenWithDialpad() failed", e);
+./packages/apps/Contacts/src/com/android/contacts/TwelveKeyDialer.java:1046:        // Note that we do this whether or not the showCallScreenWithDialpad()
+./packages/apps/Contacts/src/com/android/contacts/DialtactsActivity.java:191:                if (callKey && phone != null && phone.showCallScreen()) {
+./packages/apps/Phone/src/com/android/phone/PhoneInterfaceManager.java:258:    private boolean showCallScreenInternal(boolean specifyInitialDialpadState,
+./packages/apps/Phone/src/com/android/phone/PhoneInterfaceManager.java:280:    public boolean showCallScreen() {
+./packages/apps/Phone/src/com/android/phone/PhoneInterfaceManager.java:281:        return showCallScreenInternal(false, false);
+./packages/apps/Phone/src/com/android/phone/PhoneInterfaceManager.java:284:    // The variation of showCallScreen() that specifies the initial dialpad state.
+./packages/apps/Phone/src/com/android/phone/PhoneInterfaceManager.java:285:    // (Ideally this would be called showCallScreen() too, just with a different
+./packages/apps/Phone/src/com/android/phone/PhoneInterfaceManager.java:287:    public boolean showCallScreenWithDialpad(boolean showDialpad) {
+./packages/apps/Phone/src/com/android/phone/PhoneInterfaceManager.java:288:        return showCallScreenInternal(true, showDialpad);
+./frameworks/base/core/java/com/android/internal/widget/LockPatternUtils.java:694:            if (phone != null && phone.showCallScreen()) {
+./out/target/common/obj/JAVA_LIBRARIES/framework_intermediates/src/telephony/java/com/android/internal/telephony/ITelephony.java:70:case TRANSACTION_showCallScreen:
+./out/target/common/obj/JAVA_LIBRARIES/framework_intermediates/src/telephony/java/com/android/internal/telephony/ITelephony.java:73:boolean _result = this.showCallScreen();
+
+base/telephony/java/com/android/internal/telephony/ITelephony.aidl:    boolean showCallScreen();
+
+①  usb有主从设备之分，主设备有：pc, 现在市面上的那些插u-disk即可播放mp3的“mp3”之类的，
+usb 信号是差分信号，信号线为D+, D-,。 在usb host 端， D+，D- 各接一个15kohm 的下拉电阻， 而在usb device端，这时就有高速低速设备的区别了。usb1.0, 1.1,2.0协议中都有定义高低速设备以满足不同情况的需求，这些在硬件上的区别就是： 高速设备：d+ 接一个1.5kohm的上拉电阻，d-不接；低速设备则相反。
+      这样当usb device 插入到host中时，如果是高速设备， 则d+被拉高，d-不变；低速设备则与之相反。 这个上拉过程需要大概2.5us的时间，host这这个时间内便检测到了该信号，即可判断有device plug in，和该device的类型，然后开始通讯，枚举。。。等。
+
+②　　USB OTG（on the go） 就是既可以做host又可以做client
+我们一般是作为client接受pc传输数据，作为host时可以接打印机直接把手机中的照片打印出来
+判别是host还是client是靠USB_ID这根pin
+
+当作为client时，USB_ID基本是悬空的（内部有上拉）
+
+如果侦测到USB_ID被拉低，就被认为是作为host，向外输出
+所以需要外部client设备把USB_ID拉低
+
+========================SDIO============================================================
+SD（Secure Digital）与 MMC（Multimedia Card）
+SD 是一种 flash memory card 的标准，也就是一般常见的 SD 记忆卡，而 MMC 则是较早的一种记忆卡标准，目前已经被 SD 标准所取代。在维基百科上有相当详细的 SD/MMC 规格说明：[http://zh.wikipedia.org/wiki/Secure_Digital]。
+
+SDIO（Secure Digital I/O）
+SDIO 是目前我们比较关心的技术，SDIO 故名思义，就是 SD 的 I/O 接口（interface）的意思，不过这样解释可能还有点抽像。更具体的说明，SD 本来是记忆卡的标准，但是现在也可以把 SD 拿来插上一些外围接口使用，这样的技术便是 SDIO。
+
+所以 SDIO 本身是一种相当单纯的技术，透过 SD 的 I/O 接脚来连接外部外围，并且透过 SD 上的 I/O 数据接位与这些外围传输数据，而且 SD 协会会员也推出很完整的 SDIO stack 驱动程序，使得 SDIO 外围（我们称为 SDIO 卡）的开发与应用变得相当热门。
+
+现在已经有非常多的手机或是手持装置都支持 SDIO 的功能（SD 标准原本就是针对 mobile device 而制定），而且许多 SDIO 外围也都被开发出来，让手机外接外围更加容易，并且开发上更有弹性（不需要内建外围）。目前常见的 SDIO 外围（SDIO 卡）有：
+
+    * Wi-Fi card（无线网络卡）
+    * CMOS sensor card（照相模块）
+    * GPS card
+    * GSM/GPRS modem card
+    * Bluetooth card
+    * Radio/TV card（很好玩）
+
+SDIO 的应用将是未来嵌入式系统最重要的接口技术之一，并且也会取代目前 GPIO 式的 SPI 接口。
+
+SD/SDIO 的传输模式
+SD 传输模式有以下 3 种：
+    * SPI mode（required）
+    * 1-bit mode
+    * 4-bit mode
+
+SDIO 同样也支持以上 3 种传输模式。依据 SD 标准，所有的 SD（记忆卡）与 SDIO（外围）都必须支持 SPI mode，因此 SPI mode 是「required」。此外，早期的 MMC 卡（使用 SPI 传输）也能接到 SD 插糟（SD slot），并且使用 SPI mode 或 1-bit mode 来读取。
+
+SD 的 MMC Mode
+SD 也能读取 MMC 内存，虽然 MMC 标准上提到，MMC 内存不见得要支持 SPI mode（但是一定要支持 1-bit mode），但是市面上能看到的 MMC 卡其实都有支持 SPI mode。因此，我们可以把 SD 设定成 SPI mode 的传输方式来读取 MMC 记忆卡。
+
+SD 的 MMC Mode 就是用来读取 MMC 卡的一种传输模式。不过，SD 的 MMC Mode 虽然也是使用 SPI mode，但其物理特性仍是有差异的：
+
+    * MMC 的 SPI mode 最大传输速率为 20 Mbit/s；
+    * SD 的 SPI mode 最大传输速率为 25 Mbit/s。
+
+为避免混淆，有时也用 SPI/MMC mode 与 SPI/SD mode 的写法来做清楚区别。
+============================SDIO=============================================
+
+
+
+http://dl.google.com/io/2009/pres/W_0300_CodingforLife-BatteryLifeThatIs.pdf
+
+
+
+参考网站地址  ：
+http://androidappdocs.appspot.com   （Google android 的sdk文档。）
+http://androidappdocs.appspot.com/guide/developing/tools/adb.html#sqlite
+http://androidappdocs.appspot.com/guide/developing/tools/traceview.html
+以及
+http://www.eoeandroid.com/
+sqlite3 /data/data/com.android.providers.settings/databases/settings.db update system set value='1' where name='accelerometer_rotation';
+
+修改记录：
+1. packages/apps/Launcher2/res/layout/all_apps.xml   all_apps_2d  ->
+all_apps_3d
+2. 发现目标系统没有RenderScript的共享库， /system/lib/librs_jin.so
+/system/lib/libRS.so
+frameworks/base/libs/rs
+frameworks/base/graphics/jni
+ifneq ($(TARGET_SIMULATOR),true)   说明模拟器上不编译RS，不支持
+这两个跟libacc相关。（system/core/libacc）
+
+
+
+leo@leo-desktop:~/android_2.1_20100506$ find ./ -iname ArrayList.java
+./android/libcore/luni/src/main/java/java/util/ArrayList.java
+leo@leo-desktop:~/android_2.1_20100506$ find ./ -iname HashMap.java
+./android/libcore/luni/src/main/java/java/util/HashMap.java
+
+
+
+Dual-Mode Subscriber Station (DMSS) or Advanced Mode Subscriber
+ Software (AMSS)
+
+/usr/share/java/javassist.jar
+/usr/local/jvm/  tool.jar    com.sun.mirror.apt 
+
+/usr/share/java/javassist.jar
+javax.jnlp.*       /usr/lib/jvm/java-6-sun-1.6.0.22/jre/lib/javaws.jar
+libxom-java
+
+swt   
+.classpath 文件
+
+<classpath>
+        <classpathentry kind="src" path="."/>
+        <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
+
+ bionic/libc/bionic/stubs.c   
+
+    snprintf(state->group_name_buffer, sizeof state->group_name_buffer,
+             "app_%u", gid - AID_APP);
+
+代码检查
+cppcheck -v -s -f -a -I bo2 -I pg "代码路径(文件夹或者文件)"  1>>/dev/null
+
+Not getting console prompt...
+Add "init=/init" to your bootargs..
+
+
+There is a device config value that needs to be set:
+frameworks/base/core/res/res/values/config.xml has a value called
+config_tether_usb_regexs.  This is designed to be an overlaid resource
+(you don't change the standard file, you make a build that includes an
+overlay dir and have a frameworks/base/core/res/res/values/config.xml file
+there that just has the values defined that differ from the defaults for
+your project).  If your interface is called "usb0" you could add a "usb.*"
+regex to match that (in case of race conditions where you may sometimes get
+a usb1).
+
+System setProperty and getProperty
+In what way did you manage to invoke these apis? Did you use any hacks?
+Personally, I still consider it's not a good way to perform IPC between different apks with property.
+1. The number of slots in property system is limited, if I recall correctly, around 250.
+2. Once occupied, a slot can't be freed.
+3. The api isn't intended for external usage.
+So, if an application makes heavy use of properties, slots will be soon be exhausted. And system service may fail due to this. Another risk is the apk is bound to an internal api which may fail to work in any future version, thus break application compatibility.
+system/core/init/property_service.c for
+permission registration
+
+
+        
+   The following commit helped resolve the issue,
+
+[ARM] Do not call flush_cache_user_range with mmap_sem held
+
+We can't be holding the mmap_sem while calling flush_cache_user_range
+because the flush can fault. If we fault on a user address, the
+page fault handler will try to take mmap_sem again. Since both places
+acquire the read lock, most of the time it succeeds. However, if
+another
+thread tries to acquire the write lock on the mmap_sem (e.g. mmap) in
+between the call to flush_cache_user_range and the fault, the
+down_read
+in do_page_fault will deadlock.
+
+Also, since we really can't be holding the mmap_sem while calling
+flush_cache_user_range AND vma is actually unused by the flush itself,
+get rid of vma as an argument.
+       
+        
+The problem is really minor - the duplication only happens when multiple compilation requests for the same trace are entered in the compiler queue, and micro benchmarks with tight tiny loops happen to fit the timing criteria. The compiled code of the last compilation request will be dispatched so the performance impact is negligible albeit a small number of wasted bytes in the code cache.
+
+The fix is trivial too. Since you can spot this problem you should be able to figure out where to patch the code in red. :-)
+
+1) dalvik/vm/compiler/Frontend.c:dvmCompileTrace()
+
+    /* If we've already compiled this trace, just return success */
+    if (dvmJitGetCodeAddr(startCodePtr) && !info->discardResult) {
+        /*
+         * Make sure the codeAddress is NULL so that it won't clobber the
+         * existing entry.
+         */
+        info->codeAddress = NULL;
+        return true;
+    }
+
+2) dalvik/vm/compiler/Compiler.c:compilerThreadStart()
+
+                    } else if (!work.result.discardResult &&
+                               work.result.codeAddress) {
+                        dvmJitSetCodeAddr(work.pc, work.result.codeAddress,
+                                          work.result.instructionSet);
+                    }
+
+Hope this helps,
+-Ben
+
+
+Look at drivers/usb/gadged/f_adb.c, android.c
+
+
+sdk/jarutils/src/com/android/jarutils/KeystoreHelper.java
+sdk/jarutils/src/com/android/jarutils/DebugKeyProvider.java
+keytool -genkey -alias AndroidDebugKey -keyalg RSA -dname  "CN=Android Debug,O=Android,C=US"    -validity 365 \
+    -keypass android -keystore debug.keystore   -storepass android
+
+https://github.com/getfatday/keytool-importkeypair.git
+/home/leo/code/script/keytool-importkeypair
+ keytool-importkeypair -k ~/.android/debug.keystore -p android -pk8 platform.pk8 -cert platform.x509.pem -alias platform
+
+SourceForge password xs10525
+
+\fi
+
+
+
+OOM
+OOM => out of memory
+
+AndroidRuntime::start
+JNI_CreateJavaVM
+ZygoteInit.main()
+startSystemServer
+Zygote.forkSystemServer创建子进程 SystemServer
+handleSystemServerProcess
+
+
+OpenCore使用时，在应用层实现一个适配器（Adapter），在适配器上实现具体功能，也可以在上层实现Node，以插件形式使用。
+PVPlayer 和 PVAuthor就是基于OpenCore底层功能和接口构建的应用层库，相当于适配器。
+
+Node（节点）是PacketVideo中的基本功能模块，PacketVideo核心提供了编解码、文件处理、输入/输出等一干Node
+2-way Engine，即两路引擎，用于构建视频电话程序，OpenCore2.X开始提供的功能。
+
+
+相机3月8号版本存在内存泄漏现象:
+启动相机, 选择"照相机", 进入预览界面后, 按返回键退出, 再选择"照相机", 进入预览, 再退出, 这样操作7-8次就会出现oom (out-of-memory)
+
+经过调试,发现是由于 Camera.java 里的方法 onDestroy 调用了 onRestorePreference(); 引起的.
+
+后面跟踪到 HeadUpDisplay.restorePreferences,  看到有个 mSharedPrefs.registerOnSharedPreferenceChangeListener(l);
+
+这个才是真正的原因.
+
+简单分析一下:
+ 在Camera.onDestroy被调用之后, 由于 mSharedPrefs 有个监听的对象引用而不能被回收, 导致 Camera 里的 HeadUpDisplay 对象不能被回收,
+最后使得 Camera 对象不能被GC回收. 相机频繁多次进入之后, 相机的进程里有多个 Camera 对象存在, 而使进程的内存被消耗完了.
+
+跟踪这个问题发现, Bitmap 对象不做 recycle() 不会引起内存泄漏.  当然, 注册了对象之后, 一定要取消注册 -- 这个是引起照相机内存泄漏问题的祸根.
+I/O 流一定要关闭的,  Cursor 也一定要关闭的.  还有, 静态的列表保存对象时也要小心, 要手动释放掉.  否则,也会引起 oom,  附件的工程就演示了这个问题.
+
+system/media/mca/filterfw/native/base/utilities.h:#define DISALLOW_IMPLICIT_CONSTRUCTORS(TypeName) \
+system/media/mca/filterpacks/base/native/utilities.h:#define DISALLOW_IMPLICIT_CONSTRUCTORS(TypeName) \
+
+DISALLOW_EVIL_CONSTRUCTORS
+frameworks/base/include/media/stagefright/foundation/ABase.h
+frameworks/base/include/media/stagefright/AACWriter.h:71: error: ISO C++ forbids declaration of 'DISALLOW_EVIL_CONSTRUCTORS' with no type
+AACWriter.h 未包含 ABase.h   <media/stagefright/foundation/ABase.h>,  报此错误
+。
+\end{CJK}
+\end{document}

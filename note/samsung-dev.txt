@@ -1,0 +1,283 @@
+安装4.3.1-eabi-armv6编译器
+
+
+4.3.1-eabi-armv6是三星官方为其armv6架构处理器维护的一套编译器，不过我装起来遇到不少麻烦
+
+1、执行arm-linux-gcc报错
+[kyon@SEP4020 bin]$ arm-linux-gcc
+arm-linux-gcc: no input files
+[kyon@SEP4020 bin]$
+
+解决方法：必须将该编译器解压到/usr/local/arm/目录，因为里面有很多地方指明了绝对路径
+
+
+2、make提示mpfr库找不到
+[kyon@SEP4020 m8-android-kernel]$ make
+CHK     include/linux/version.h
+make[1]: “include/asm-arm/mach-types.h”是最新的。
+CHK     include/linux/utsrelease.h
+SYMLINK include/asm -> include/asm-arm
+CC      kernel/bounds.s
+/usr/local/arm/4.3.1-eabi-armv6/usr/bin-ccache/../libexec/gcc/arm-samsung-linux-gnueabi/4.3.1/cc1: error while loading shared libraries: libmpfr.so.1: cannot open shared object file: No such file or directory
+make[1]: *** [kernel/bounds.s] 错误 1
+make: *** [prepare0] 错误 2
+
+解决方法：其实是有这个库的，就在/usr/local/arm/4.3.1-eabi-armv6/mpfr/lib
+在.bashrc中添加一个环境变量
+export LD_LIBRARY_PATH=/usr/local/arm/4.3.1-eabi-armv6/mpfr/lib
+然后在source .bashrc即可
+
+
+最后来看这个编译器有啥好处：
+
+[kyon@SEP4020 ~]$ arm-linux-gcc -v
+Using built-in specs.
+Target: arm-samsung-linux-gnueabi
+Configured with: /home/scsuh/workplace/final/toolchain-script/toolchain_build_arm/gcc-4.3.1/configure --prefix=/usr --build=i386-pc-linux-gnu --host=i386-pc-linux-gnu --target=arm-samsung-linux-gnueabi --enable-languages=c,c++ --with-sysroot=/usr/local/arm/4.3.1-eabi-armv6 --with-build-time-tools=/usr/local/arm/4.3.1-eabi-armv6/usr/arm-samsung-linux-gnueabi/bin --enable-__cxa_atexit --enable-target-optspace --with-gnu-ld --with-pkgversion='for S3C64XX Samsung Electronics AP Development Team' --enable-shared --with-gmp=/usr/local/arm/4.3.1-eabi-armv6/gmp --with-mpfr=/usr/local/arm/4.3.1-eabi-armv6/mpfr --disable-nls --enable-threads --disable-multilib --disable-decimal-float --with-arch=armv6 --with-float=softfp --with-fpu=vfp --enable-symvers=gnu
+Thread model: posix
+gcc version 4.3.1 (for S3C64XX Samsung Electronics AP Development Team)
+
+1）编译时默认使用硬件浮点单元--with-float=softfp --with-fpu=vfp
+2）默认架构armv6 --with-arch=armv6 
+3）有自己的mpfr库
+等等
+
+
+ sudo apt-get install uboot-mkimage libmpfr-dev libgmp3-dev lib32gmp3-dev
+
+LD_LIBRARY_PATH=/usr/local/arm/4.3.1-eabi-armv6/mpfr/lib ./build.sh  => 这
+样不行！！！！
+
+$export LD_LIBRARY_PATH=/usr/local/arm/4.3.1-eabi-armv6/mpfr/lib
+$./build.sh -k
+
+$ TARGET_PRODUCT=sec_smdk6410 mmm radio
+build/envsetup.sh 末尾会包含 （including）
+vendor/*/vendorsetup.sh
+vendor/*/build/vendorsetup.sh
+add_lunch_combo sec_smdk6410-eng  
+
+lunch choosecombo 
+
+
+增加
+packages/apps/FM
+frameworks/base/core/java/android/hardware/fmradio
+frameworks/base/core/java/android/widget/NumberPicker.java
+frameworks/base/core/java/android/widget/NumberPickerButton.java
+core/jni/android_hardware_fm.cpp
+
+
+修改
+frameworks/base/media/java/android/media/AudioSystem.java
+frameworks/base/media/java/android/media/AudioService.java
+frameworks/base/media/java/android/media/AudioManager.java
+frameworks/base/media/java/android/media/MediaRecorder.java
+frameworks/base/media/libmedia/AudioSystem.cpp
+frameworks/base/media/libmedia/IAudioFlinger.cpp
+core/jni/Android.mk
+vendor/sec/smdk6410/BoardConfig.mk
+frameworks/base/core/jni/AndroidRuntime.cpp
+frameworks/base/include/media/AudioSystem.h
+frameworks/base/include/media/IAudioFlinger.h
+frameworks/base/include/media/mediarecorder.h
+
+frameworks/base/libs/audioflinger/AudioDumpInterface.h
+frameworks/base/libs/audioflinger/AudioFlinger.cpp
+frameworks/base/libs/audioflinger/AudioFlinger.h
+frameworks/base/libs/audioflinger/AudioHardwareGeneric.cpp
+frameworks/base/libs/audioflinger/AudioHardwareGeneric.h
+frameworks/base/libs/audioflinger/AudioHardwareStub.cpp
+frameworks/base/libs/audioflinger/AudioHardwareStub.h
+frameworks/base/libs/audioflinger/AudioPolicyService.h
+frameworks/base/libs/audioflinger/AudioPolicyService.cpp
+hardware/libhardware_legacy/include/hardware_legacy/AudioHardwareInterface.h
+hardware/libhardware_legacy/include/hardware_legacy/AudioPolicyInterface.h
+AudioPolicyManager.cpp  还需要修改
+
+HAVE_FM_RADIO
+external/libaudio/AudioHardwareALSA.cpp
+external/libaudio/AudioHardwareALSA.h
+
+frameworks/base/core/ 的代码在加入后，touch一下，更新日期，以使依赖产生作用。
+
+hardware/libhardware_legacy/include/hardware_legacy/AudioPolicyInterface.h 
+修改之后， checkapi
+******************************
+You have tried to change the API from what has been previously approved.
+
+To make these errors go away, you have two choices:
+   1) You can add "@hide" javadoc comments to the methods, etc. listed in the
+      errors above.
+
+   2) You can update current.xml by executing the following command:
+         make update-api
+
+      To submit the revised current.xml to the main Android repository,
+      you will need approval.
+******************************
+
+
+W/dalvikvm( 2082): No implementation found for native Landroid/hardware/fmradio/FmReceiverJNI;.acquireFdNative (Ljava/lang/String;)I
+D/AndroidRuntime( 2082): Shutting down VM
+
+由于，JNI 的源代码宏定义未打开，导致相关代码没有编译进入 libanrdoir_runtime
+
+#include <fcntl.h>   定义了 open 及 O_RDONLY。
+open 在 target 可执行程序里，可以直接打开。 但是在 JNI 里面打不开。
+需要修改 system/core/init/devices.c 的 devperms， 及 init.smdk6410.rc 
+init 程序和 init.smdk6410.rc 应放在 内核的 root目录下, 重新编译内核。
+
+
+ TARGET_PRODUCT=sec_smdk6410 mmm frameworks/base
+
+编译错误：
+产生类错误， 把 App 放在 Eclipse 下编译， 然后，拷贝到 Android 工程下，使用
+mmm 编译， 在使用Eclipse时产生了R.java 以及 AIDL 的接口都放在 源码的 gen目录下
+。但是，Android 命令行工具 如 mmm，这些中间文件是放在 out目录，而且他会把源码
+目录的所有Java文件都拿去编译，结果就导致了 类重复
+packages/apps/FMRadio/gen/com/android/fm/radio/IFMRadioServiceCallbacks.java:6: 类重复： com.android.fm.radio.IFMRadioServiceCallbacks
+public interface IFMRadioServiceCallbacks extends android.os.IInterface
+       ^
+packages/apps/FMRadio/gen/com/android/fm/radio/IFMRadioService.java:6: 类重复： com.android.fm.radio.IFMRadioService
+public interface IFMRadioService extends android.os.IInterface
+       ^
+packages/apps/FMRadio/gen/com/android/fm/R.java:10: 类重复： com.android.fm.R
+
+今天和昨天在安装和运行FM程序时遇到下面两个问题:
+1, INSTALL_FAILED_OLDER_SDK
+2, W/dalvikvm( 2043): VFY: unable to resolve virtual method 76: Landroid/hardware/fmradio/FmConfig;.getChSpacing ()I
+第一个问题以前遇到过，把 AndroidManifest.xml 文件中类似 <uses-sdk android:minSdkVersion="4" /> 去掉
+或者 build/core/version_defaults.mk 中修改 DEFAULT_APP_TARGET_SDK。
+AndroidManifest.xml 看了一下，没问题。那问题由第二中情况引起的。
+第二种情况，显然系统运行的 android.jar 包中没有
+android/hardware/fmradio/FmConfig。 因为我的 FM 能编译通过，所以，我编译出来的
+android.jar包肯定包含了 android/hardware/fmradio/FmConfig。那么，肯定没有同步
+好。
+我检查了脚本， cp 命令有问题， 他的递归选项用了 -R， 而且有放在最后。总结一下
+命令的递归选项， rm, cp 用 -r，grep ls，chmod，chown用 -R，而且选项一般跟在命令之
+后，其他参数之前。
+cp -r <from-path>/src/* <to-path>/dst
+cp -r <from-path>/src  <to-path>/dst
+两者不一样，前者是把src下的各个子目录拷贝到dst，而后者是把src本身拷贝到dst中。
+如果，src有子目录foo，bar。
+第一种， dst/foo， dst/bar;后一种， dst/src/foo, dst/src/bar。
+
+串口不能进入控制台，可能原因 ： minicom 或 kermit 开了流控 flow control; 系统
+没有sh，比如我有busybox替换Android本身的sh，并安装在 /system/busy_box，把此路
+径加入环境变量（/etc/init.rc)，有一天，我删除了系统的/system/busy_box，结果在
+串口中不能进入控制台
+
+
+SMDK6410 编译的内核和SDK都跑不起来，是因为版本获取的不对。很奇怪，这版本管理这
+么混乱的。
+
+FM 应用参考设计是通过BT（蓝牙）打开FM。
+
+$minicom -D /dev/ttyUSB1
+
+usb connect log
+[   65.048692] [handle_suspend_intr]: USB Bus Suspend (DSTS):0x3
+[   65.240194] hub 1-0:1.0: unable to enumerate USB device on port 2
+[   65.489496] [s3c_udc_cable_connect] 
+[   65.489580] android_usb gadget: high speed config #1: UMS + ADB (Debugging
+mode)
+[   68.438416] jerry@ chunk_start_num:0 ,G3D_CHUNK_NUM:16 
+[   68.438465] jerry@ uiRequsetBlock:1 ,size:2097152 
+[   70.529855] jerry@ chunk_start_num:0 ,G3D_CHUNK_NUM:16 
+[   70.529904] jerry@ uiRequsetBlock:1 ,size:2097152 
+[   70.595608] init: Flash : test : msg.name = ctl.stop
+[   70.595628]  msg.value = -1095865000
+[   70.595635]  cr.uid = 1000
+[   70.595641]  cr.pid = 1885<unregister_alloc_info index=5 id=0xcd061000>
+[   72.373919] jerry@ chunk_start_num:0 ,G3D_CHUNK_NUM:16 
+[   72.373966] jerry@ uiRequsetBlock:1 ,size:2097152 
+
+
+make clean - delete everything not needed for building external modules
+make mrproper - delete all generated files, including .config
+make distclean - delete all temporary files such as *.orig, *~, *.rej etc.
+8．修改root file system
+配置Touchscreen 使之能正常工作， initial_ram_disk 文件下修改/etc/init.rc，加入下面内
+容
+TSLIB_CONSOLEDEVICE none
+TSLIB_FBDEVICE /dev/graphics/fb0
+TSLIB_TSDEVICE /dev/input/ts0
+TSLIB_CALIBFILE /etc/pointercal
+TSLIB_CONFFILE /etc/ts.conf
+TSLIB_PLUGINDIR /lib/ts
+
+
+关于屏问题
+发现没有节点 /dev/fb0
+内核编译选项， Support for frame buffer devices -> S3C Framebuffer Support ->
+Select LCD Type -> WX4300 LCD(4.3 inch)
+drivers/video/samsung/s3cfb_wx4300f.c
+
+busybox sh 涉及的环境变量修改， 在内核的源码结构中，加入 Android 启
+动时的根目录， 名为root， 修改其下的 init.rc 文件， 在开头部分
+export PATH /sbin:/system/sbin:/system/bin:/system/xbin:/system/busy_box/bin
+由于从SD卡启动，所以编译到zImage 映像
+
+查看设备节点
+adb shell ls -l /dev  | sort -k8
+
+ln -s /dev/s3c_serial0 /dev/console
+
+
+
+音频：
+alsa_amixer cset numid=36,iface=MIXER,name='Output 1 Playback Volume' 127
+alsa_amixer cset numid=38,iface=MIXER,name='Output 2 Playback Volume' 0
+
+alsa_amixer sset "Left Mixer",0 on
+
+alsa_aplay -vv foo.wav
+
+
+mount -t vfat -o utf8 /dev/block/mmcblk0p1 /mnt/sdcard
+alsa_amixer sset 'Left Mixer',0 on
+alsa_amixer sset 'Right Mixer',0 on
+
+
+alsa_amixer cset numid=36,iface=MIXER,name='Output 1 Playback Volume' 127
+alsa_amixer cset numid=38,iface=MIXER,name='Output 2 Playback Volume' 0
+
+烧写文件放在sd卡的sdfuse目录下
+sdfuse flash bootloader u-boot-config_fused.bin   //烧写引导
+sdfuse flash kernel zImage                                    //烧写内核
+sdfuse flash ramdisk ramdisk-uboot.img
+sdfuse flash system system.img                            //烧写系统
+sdfuse erase userdata
+sdfuse erase cache
+
+./drivers/usb/serial/cyberjack.c
+./include/config/snd/jack.h
+./include/sound/jack.h
+./Documentation/sound/alsa/emu10k1-jack.txt
+./Documentation/sound/alsa/soc/jack.txt
+./sound/core/jack.o
+./sound/core/jack.c
+./sound/core/.jack.o.cmd
+./sound/soc/soc-jack.o
+./sound/soc/.soc-jack.o.cmd
+./sound/soc/soc-jack.c
+
+
+snd_jack_report
+snd_soc_jack_report
+input_report_switch
+
+jack.c jack_types
+SW_HEADPHONE_INSERT
+SW_VIDEOOUT_INSERT
+SW_MICROPHONE_INSERT
+
+
+./include/linux/input.h
+
+
+You can get reference libcamera implementation here..
+http://git.omapzoom.org/?p=platform/hardware/ti/omap3.git;a=tree;f=camera-omap3;hb=refs/heads/froyo
+
+Needs a bit of porting for omap2420 though., u can start with a stub library (to get the build going for now)

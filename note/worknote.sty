@@ -1,0 +1,176 @@
+%\NeedsTexFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{worknote}[2012/07/02 Xu shenlong custmization for daily
+work note]
+
+\RequirePackage{kvoptions}
+
+\SetupKeyvalOptions{
+   family=worknote,
+}
+\DeclareStringOption{notetitle}
+\ProcessKeyvalOptions*
+
+\usepackage{verbatim}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%China font%%%%%%%%%%%%%%%%%%%%
+\usepackage{xeCJK}
+\setCJKmainfont{AR PL UKai CN}
+%\setCJKmainfont{Adobe Kaiti Std}
+\setCJKmonofont{文泉驿等宽正黑}
+\setCJKsansfont{Ubuntu}%verbatim 所用字体
+\punctstyle{banjiao}
+%\setCJKfamilyfont{AR PL UKai CN}{kai}
+\setmainfont{DejaVu Sans}
+
+
+%研究了一下verbatim.sty,发现verbatim环境默认使用ttfamily的字体,因此只要重定义
+%\verbatim@font宏使verbatim默认使用rmfamily或sffamily字体,通过\setromanfont或
+%\setsansfont设置相应字体族为中文字体即可。
+%默认使用 CJKmonofont 字体， 设为 sffamily 后使用 sansfont 字体
+%\def\verbatim@font{\sffamily\small} %如果使用roman字体族，将sffamily改成rmfamily
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%for code list%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{listings}
+\lstset{language=C,
+breaklines=true,
+extendedchars=false,
+breakautoindent=true,
+breakindent=10pt,
+xleftmargin=30pt, 
+numbers=left, 
+basicstyle=\tiny,%\scriptsize,
+numberstyle=\tiny,
+keywordstyle=\tiny\color{blue!70}, 
+commentstyle=\color{red!50!green!50!blue!50},
+showspaces=false,
+showstringspaces=false,
+escapeinside={(*@}{@*)} 
+%  frame=shadowbox,
+%  rulesepcolor=\color{red!20!green!20!blue!20}
+}
+
+\usepackage[CJKbookmarks=true,
+bookmarksnumbered=true,
+colorlinks=true,
+% frenchlinks=true, raiselinks=true, xetex,, linktocpage=true 
+citecolor=magenta,
+linkcolor=blue]{hyperref}
+
+%正文直接使用"_"
+%"使用了underscore后，不需要高亮"_" , syntax/tex.vim
+%:highlight link texOnlyMath texZone
+\usepackage{underscore}
+
+\makeatletter
+\newcommand{\figcaption}{\def\@captype{figure}\caption}
+\newcommand{\tabcaption}{\def\@captype{table}\caption}
+\makeatother
+
+%%%%%%%%%%%% watermark %%%%%%%%%%%%%%%%%%
+\usepackage{eso-pic}
+\usepackage{color}
+\makeatletter
+  \AddToShipoutPicture{\rm%
+    \setlength{\@tempdimb}{.5\paperwidth}%
+    \setlength{\@tempdimc}{.5\paperheight}%
+    \setlength{\unitlength}{1pt}%
+    \put(\strip@pt\@tempdimb,\strip@pt\@tempdimc){%
+      \makebox(0,0){\rotatebox{45}{\textcolor[gray]{0.9}%
+      {\fontsize{3cm}{3cm}\selectfont{Leo龙}}}}
+    }
+}
+\makeatother
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%title and reference locale%%%%%%%%%%%%%%%%%%%% 
+\renewcommand{\refname}{参考文献}
+\renewcommand\contentsname{目录}
+\renewcommand\listfigurename{插图目录}
+\renewcommand\listtablename{表格目录}
+\renewcommand\indexname{索引}
+\renewcommand\appendixname{附录}
+\renewcommand\figurename{图}
+\renewcommand\tablename{表}
+\renewcommand{\lstlistlistingname}{代码列表集}
+\renewcommand{\lstlistingname}{代码}
+
+\def\equationautorefname{公式}
+\def\figureautorefname{图}
+\def\subfigureautorefname{子图}
+\def\sectionautorefname{节}
+\def\subsectionautorefname{子节}
+\def\subsubsectionautorefname{小节}
+\def\Itemautorefname{项}
+\def\tableautorefname{表格}
+\def\footnoteautorefname{脚注} 
+\def\appendixautorefname{附录}
+
+\usepackage{xcolor}
+
+% graphics do not support scale option, 
+% it will complain that "Paragraph ended before \Gin@iii was complete. \par"
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{makeidx}%索引
+%\usepackage[iso]{isodateo}%控制\today的格式
+%\title{\notetitle}
+\author{Leo shecenon@gmail.com}
+\date{\today}
+
+\makeindex 
+
+\def\littlehb{\noindent\rule[-1ex]{\textwidth}{3pt}\\[0.2ex]}
+\begin{comment}
+%------------------------------纸张大小看geometry的手册----------------------------------
+\usepackage[body={22cm,26cm}, top=10mm, bottom=20mm, left=10.0mm, right=10.0mm]{geometry}
+\geometry{papersize={20cm,24cm}}
+\topmargin 20pt
+% 定义转换成pdf文档的纸张大小，应与\paperwidth \paperheight一致
+%\special{pdf: pagesize width 20cm height 30cm}
+% true的含义是保持尺寸不会随一些参数的变化而变化，具体可见Knuth的TeXbook
+%\paperwidth 20 true cm                  % 纸张宽
+%\paperheight 30 true cm                 % 纸张高
+%------------------------------页面布局----------------------------------
+%\textwidth 10 true cm                   % 正文宽
+%\textheight 20 true cm                  % 正文高
+\headheight 14pt                       % 页眉高
+\headsep    16pt                        % 页眉距离
+%\footskip   27pt                        % 页脚距离
+%\marginparsep 10pt                      % 边注区距离
+%\marginparwidth 100pt                  % 边注区宽
+%----------------------------页边空白调整-------------------------------
+\def\marginset#1#2{                      % 页边设置 \marginset{left}{top}
+\setlength{\oddsidemargin}{#1}         % 左边（书内侧）装订预留空白距离
+\iffalse                   % 如果考虑左侧（书内侧）的边注区则改为\iftrue
+\reversemarginpar
+\addtolength{\oddsidemargin}{\marginparsep}
+\addtolength{\oddsidemargin}{\marginparwidth}
+\fi
+\setlength{\evensidemargin}{0mm}       % 置0
+\iffalse                   % 如果考虑右侧（书外侧）的边注区则改为\iftrue
+\addtolength{\evensidemargin}{\marginparsep}
+\addtolength{\evensidemargin}{\marginparwidth}
+\fi
+% \paperwidth = h + \oddsidemargin+\textwidth+\evensidemargin + h
+\setlength{\hoffset}{\paperwidth}
+\addtolength{\hoffset}{-\oddsidemargin}
+\addtolength{\hoffset}{-\textwidth}
+\addtolength{\hoffset}{-\evensidemargin}
+\setlength{\hoffset}{0.5\hoffset}
+\addtolength{\hoffset}{-1in}           % h = \hoffset + 1in
+\setlength{\voffset}{-1in}             % 0 = \voffset + 1in
+\setlength{\topmargin}{\paperheight}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\addtolength{\topmargin}{-\textheight}
+\addtolength{\topmargin}{-\footskip}
+\addtolength{\topmargin}{#2}           % 上边预留装订空白距离
+\setlength{\topmargin}{0.5\topmargin}
+}
+% 调整页边空白使内容居中，两参数分别为纸的左边和上边预留装订空白距离
+\marginset{10mm}{12mm}
+\end{comment}
+
+\endinput

@@ -1,0 +1,42 @@
+1. Android 四大部件：
+   Activity： 人机交换界面， 负责 UI 呈现。  
+   Service：后台程序，不具备 UI 功能， 如数据收发，播放背景音乐
+   BroadcastReceiver: 接受广播信息。
+   Provider：
+
+2. Android 进程间通讯（IPC）， IBinder 及 AIDL。
+
+3. AndroidManifest.xml的作用， 声明应用使用的权限，
+Application/Activity/Service/BroadcastReceiver的属性
+
+4. 常用的Widget ： Button， Toast， ListView, ProgressBar等等。
+5. Layout: FrameLayout, AbsoluteLayout, LinearLayout, TableLayout,
+RelativeLayout。 AbsoluteLayout 不推介使用。
+
+6. 处理用户事件时要做大量运算时如何处理？ 
+不能在响应事件时直接做大量计算，妥当的方法是开线程。
+
+7.  Android 平台处理 XML 的方法： SAX，
+
+4. Android的虚拟机Dalvik，
+Dalvik VM 与 一般Java虚拟机的区别：
+Dalvik 是基于寄存器的，一般的JVM是基于堆栈的。
+Dalvik执行的是特有的DEX文件格式，而JVM运行的是*.class文件格式。
+
+Dalvik 现在具备 JIT。JIT的作用。
+
+Dalvik 进程特点
+每一个Android应用都运行在一个Dalvik虚拟机实例里，而每一个虚拟机实例都是一个独
+立的进程空间。每个进程之间可以通信（IPC，Binder机制实现）。虚拟机的线程机制，
+内存分配和管理，Mutex等等都是依赖底层操作系统而实现的。
+
+Zygote进程的作用：
+Zygote进程是在系统启动时产生的，它会完成虚拟机的初始化，库的加载，预置类库的加
+载和初始化等等操作，而在系统需要一个新的虚拟机实例时，Zygote通过复制自身，最快
+速的提供个系统。另外，对于一些只读的系统库，所有虚拟机实例都和Zygote共享一块内
+存区域，大大节省了内存开销。
+
+9. 数据永久存储方法： Preference，文件，SQLite3
+
+10. Android 浏览器的引擎 WebKit
+11. Android 程序如何调用C/C++库： JNI。
