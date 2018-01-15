@@ -1,0 +1,151 @@
+platform$ find dalvik/  -name "Method.java"
+dalvik/dx/src/com/android/dx/cf/iface/Method.java
+dalvik/libcore/luni-kernel/src/main/java/java/lang/reflect/Method.java
+dalvik/libcore/xml/src/main/java/org/apache/xml/serializer/Method.java
+platform$ find dalvik/  -name "Class.java"
+dalvik/dx/tests/089-dex-define-object/Class.java
+dalvik/libcore/luni-kernel/src/main/java/java/lang/Class.java
+platform$ find dalvik/  -name "Field.java"
+dalvik/dx/src/com/android/dx/cf/iface/Field.java
+dalvik/libcore/luni-kernel/src/main/java/java/lang/reflect/Field.java
+platform$ find dalvik/  -name "Constructor.java"
+dalvik/libcore/luni-kernel/src/main/java/java/lang/reflect/Constructor.java
+
+
+platform$ find ./dalvik  -name "Member.java"
+./dalvik/dx/src/com/android/dx/cf/iface/Member.java
+./dalvik/libcore/luni/src/main/java/java/lang/reflect/Member.java
+
+Constructor, Field, Class all implement Member interface.
+
+
+
+
+
+
+
+一个方法用throws声明了异常，那么使用方法的客户就必须要捕获异常（try...catch）或者也声明throws,不管这个方法实际有没有抛出异常。不声明就不用捕获。
+
+但是一旦throws Throwable,那么调用它的所用方法都要声明throws Throwable. 
+还有在违例控制器重新抛出异常(即捕获异常后处理)，必须用throws声明异常。
+
+RuntimeException及一般异常可以不用声明，
+
+
+eclipse中形如$NON-NLS-1$注释的含义
+
+NON Need Localize String 1的缩写。rcp的文档里是这样表述的The string $NON-NLS-1$ is a hint for both the compiler and the Externalization wizard that the first character string on this line is a tag or keyword of some sort and should not be localized. 也就是说$NON-NLS-1$表明本行的第一个string型变量是一个标签或者关键字，不需要被本地化
+
+
+public static String valueOf(boolean value) {     
+        return value ? "true" : "false"; //$NON-NLS-1$ //$NON-NLS-2$  
+}      
+What is "//$NON-NLS-1$ //$NON-NLS-2$" mean ?
+
+It's used by Eclipse to indicate that a string doesn't need to be translated, probably because it's not going to be seen by the application's users. Netbeans uses NOI18N for the same purpose.
+
+If you don't add that, you'll get a compiler warning. It doesn't stop your code from compiling into a valid class file, but it tells you that you may be doing something undesirable. You are free to ignore the warning. But if you don't want to see it at all--perhaps because too many warnings about something that you're doing on purpose clutters up the output and obscures warnings you do care--then you can add that $NON-NLS-1$ to tell the compiler not to produce the warning.
+
+It's just about fine-tuning which warnings you do and do not care to see.
+
+
+
+
+Java关键字new和newInstance的区别方法
+　在初始化一个类，生成一个实例的时候，newInstance()方法和new关键字除了一个是方法，一个是关键字外，最主要有什么区别?它们的区别在于创建对象的方式不一样，前者是使用类加载机制，后者是创建一个新类。那么为什么会有两种创建对象方式?这主要考虑到软件的可伸缩、可扩展和可重用等软件设计思想。
+
+　　Java中工厂模式经常使用newInstance()方法来创建对象，因此从为什么要使用工厂模式上可以找到具体答案。 例如：
+    class c = Class.forName(“Example”);
+　　factory = (ExampleInterface)c.newInstance();
+
+    其中ExampleInterface是Example的接口，可以写成如下形式：
+
+    String className = "Example";
+　　class c = Class.forName(className);
+　　factory = (ExampleInterface)c.newInstance();
+
+    进一步可以写成如下形式：
+    String className = readfromXMlConfig;//从xml 配置文件中获得字符串
+　　class c = Class.forName(className);
+　　factory = (ExampleInterface)c.newInstance();
+    上面代码已经不存在Example的类名称，它的优点是，无论Example类怎么变化，上述代码不变，甚至可以更换Example的兄弟类Example2 , Example3 , Example4……，只要他们继承ExampleInterface就可以。
+　　从JVM的角度看，我们使用关键字new创建一个类的时候，这个类可以没有被加载。但是使用newInstance()方法的时候，就必须保证：1、这个类已经加载;2、这个类已经连接了。而完成上面两个步骤的正是Class的静态方法forName()所完成的，这个静态方法调用了启动类加载器，即加载java API的那个加载器。
+
+　　现在可以看出，newInstance()实际上是把new这个方式分解为两步，即首先调用Class加载方法加载某个类，然后实例化。 这样分步的好处是显而易见的。我们可以在调用class的静态加载方法forName时获得更好的灵活性，提供给了一种降耦的手段。
+
+　　最后用最简单的描述来区分new关键字和newInstance()方法的区别：
+　　newInstance: 弱类型。低效率。只能调用无参构造。
+　　new: 强类型。相对高效。能调用任何public构造。
+
+coffee,  CoffeeGenerator.java,  Thinking In Java  
+xml,     DOMTreeTest.java,     Java Core Technology, Volume II
+DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();   
+
+
+
+
+一个方法或类用throws声明了它要抛出的异常，那么客户在使用它时，必须捕获异常，不论此方法或类实际代码中有没有真的抛出异常代码。
+
+一个方法用throws声明了异常，那么使用方法的客户就必须要捕获异常（try...catch）
+或者也声明throws,不管这个方法实际有没有抛出异常。不声明就不用捕获。
+
+但是一旦throws Throwable,那么调用它的所用方法都要声明throws Throwable. 
+还有在违例控制器重新抛出异常(即捕获异常后处理)，必须用throws声明异常。
+
+RuntimeException及一般异常可以不用声明，
+
+javap    JDK的反编译工具
+serialver    生成 serialVersionUID。
+
+ serialVersionUID 用来表明类的不同版本间的兼容性
+简单来说，Java的序列化机制是通过在运行时判断类的serialVersionUID来验证版本一致
+性的。在进行反序列化时，JVM会把传来的字节流中的serialVersionUID与本地相应实体
+（类）的serialVersionUID进行比较，如果相同就认为是一致的，可以进行反序列化，否
+则就会出现序列化版本不一致的异常。
+当实现java.io.Serializable
+接口的实体（类）没有显式地定义一个名为serialVersionUID，类型为long的变量时，
+Java序列化机制会根据编译的class自动生成一个serialVersionUID作序列化版本比较用
+，这种情况下，只有同一次编译生成的class才会生成相同的serialVersionUID
+。如果我们不希望通过编译来强制划分软件版本，即实现序列化接口的实体能够兼容先前
+版本，未作更改的类，就需要显式地定义一个名为serialVersionUID，类型为long的变量
+，不修改这个变量值的序列化实体都可以相互进行串行化和反串行化不显式定义这个属性
+值的另一个坏处是，不利于程序在不同的JVM之间的移植。因为不同的编译器实现该属性
+值的计算策略可能不同，从而造成虽然类没有改变，但是因为JVM不同，出现因类版本不
+兼容而无法正确反序列化的现象出现。
+
+Java 正则表达式的一点见解
+Perl 和 Java 中 '.'， '?', '*' 与 '\' 都是元字符。但是，Perl(或者VIM) 中要使用
+他们的字面意义时，只需加'\'即可，而Java中却是要"\\"，如Java 的正则表示式中 '\'
+要用 "\\\\" 表示， 而Perl中只需 "\\"，这与C语言中定义是一致的。
+但是，要注意到 Perl (VIM) 中正则表达式是没有双引号的，而Java中是在双引号中。所
+以，实际上，Java中正则处理器对一个字符串按语言中的转义字符定义处理，那么，这个
+字符串实际经过了两次处理， 例如： "\\\\"经过Java编译器处理后变成"\\"，按照语言
+标准处理(C/++或者Java), 前两个"\\"解析成一个'\'，后面两个也一样。然后，正则处
+理也按照此标准"\\"即是字面字符"\"。这让我们想起了Makefile中的eval函数处理中涉
+及的两次扩展。
+
+<? encodig = "utf-8"?>
+编码声明要跟文件实际的编码要一致。否则，解析器会出问题。
+
+DTD  SYSTEM   PUBLIC
+
+
+#PCDATA
+
+parsed  character  data
+
+CDATA   character  data
+
+
+
+
+
+JSON (JavaScript Object Notation) is a lightweight data-interchange
+format. It is easy for humans to read and write. It is easy for
+machines to parse and generate. It is based on a subset of the
+JavaScript Programming Language, Standard ECMA-262 3rd Edition -
+December 1999. JSON is a text format that is completely language
+independent but uses conventions that are familiar to programmers of
+the C-family of languages, including C, C++, C#, Java, JavaScript,
+Perl, Python, and many others.  These properties make JSON an ideal
+data-interchange language.
